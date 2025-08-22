@@ -509,93 +509,124 @@ function addTxnForm(defaultPkId){
 
 /* ================== SETTINGS (Categories, Bills, Theme) ================== */
 function renderSettings(){
-  const panel=$("#settings"); const old=panel.querySelector("#dyn"); if(old) old.remove();
-  const host=el("div",{id:"dyn"});
+  const panel = $("#settings");
+  const old = panel.querySelector("#dyn");
+  if (old) old.remove();
+  const host = el("div", { id: "dyn" });
 
-  /* --- Categories --- */
-  const catBox=el("div",{class:"panel"},[
-    el("h3",{},"Categories"),
-    el("div",{class:"inline",style:"gap:8px; flex-wrap:wrap"}, db.categories.map(c=> el("span",{class:"pill"},c))),
-    el("div",{class:"row",style:"margin-top:10px"},[
-      field("Add a category", el("input",{id:"newCat",placeholder:"e.g., Subscriptions"})),
-      el("div",{class:"col"},[ el("label",{}," "), el("button",{id:"addCatBtn",className:"primary",text:"+ Add"}) ])
+  /* ---------- Categories ---------- */
+  const catBox = el("div", { class:"panel" }, [
+    el("h3", {}, "Categories"),
+    el("div", { class:"inline", style:"gap:8px; flex-wrap:wrap" },
+      db.categories.map(c => el("span", { class:"pill" }, c))
+    ),
+    el("div", { class:"row", style:"margin-top:10px" }, [
+      (function(){
+        const inp = el("input", { id:"newCat", placeholder:"e.g., Subscriptions" });
+        return el("div", { class:"col" }, [ el("label", {}, "Add a category"), inp ]);
+      })(),
+      (function(){
+        const btn = el("button", { id:"addCatBtn", className:"primary", text:"+ Add" });
+        return el("div", { class:"col" }, [ el("label", {}, " "), btn ]);
+      })()
     ])
   ]);
   host.appendChild(catBox);
 
-  /* --- Bills (Reserve / Mark Paid) --- */
-  const billsBox=el("div",{class:"panel"},[
-    el("h3",{},"Bills (recurring templates)"),
-    el("div",{id:"billsList"})
+  /* ---------- Bills (templates) ---------- */
+  const billsBox = el("div", { class:"panel" }, [
+    el("h3", {}, "Bills (recurring templates)"),
+    el("div", { id:"billsList" })
   ]);
-  const addForm=el("div",{class:"row",style:"margin-top:10px"},[
-    field("Bill name", el("input",{id:"bName",placeholder:"Rent"})),
-    field("Amount", el("input",{id:"bAmt",inputMode:"decimal",placeholder:"1200"})),
-    field("Due day (1–31)", el("input",{id:"bDay",inputMode:"numeric",placeholder:"1"})),
-    field("Category", selectFrom("bCat", db.categories))
-  ]);
-  const addRow=el("div",{class:"inline",style:"margin-top:8px"},[
-    el("div",{class:"spacer"}), el("button",{id:"bAdd",className:"btn primary",text:"+ Add Bill"})
-  ]);
-  billsBox.appendChild(addForm); billsBox.appendChild(addRow); host.appendChild(billsBox);
 
-  /* --- Theme --- */
-  const presets=[
+  const addForm = el("div", { class:"row", style:"margin-top:10px" }, [
+    (function(){ const i=el("input",{id:"bName",placeholder:"Rent"});       return el("div",{class:"col"},[el("label",{},"Bill name"),i]); })(),
+    (function(){ const i=el("input",{id:"bAmt",inputMode:"decimal",placeholder:"1200"}); return el("div",{class:"col"},[el("label",{},"Amount"),i]); })(),
+    (function(){ const i=el("input",{id:"bDay",inputMode:"numeric",placeholder:"1"});    return el("div",{class:"col"},[el("label",{},"Due day (1–31)"),i]); })(),
+    (function(){ const s=selectFrom("bCat", db.categories);                   return el("div",{class:"col"},[el("label",{},"Category"),s]); })()
+  ]);
+  const addRow = el("div", { class:"inline", style:"margin-top:8px" }, [
+    el("div", { class:"spacer" }),
+    el("button", { id:"bAdd", className:"btn primary", text:"+ Add Bill" })
+  ]);
+  billsBox.appendChild(addForm);
+  billsBox.appendChild(addRow);
+  host.appendChild(billsBox);
+
+  /* ---------- Theme ---------- */
+  const themePresets = [
     {name:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e"},
     {name:"Ocean",    bg:"#0b1020", panel:"#0f1a2f", txt:"#e6f7ff", acc:"#3ea8ff", good:"#00d19a", bad:"#ff6b6b"},
     {name:"Forest",   bg:"#0e1512", panel:"#12201a", txt:"#e6f4ea", acc:"#34d399", good:"#22c55e", bad:"#ef4444"},
     {name:"Sunset",   bg:"#201016", panel:"#2a1820", txt:"#ffe9ee", acc:"#ff6b9a", good:"#f6c84c", bad:"#ff7575"}
   ];
-  const themeBox=el("div",{class:"panel"},[
-    el("h3",{},"Theme"),
-    el("div",{class:"row"},[
-      field("Preset", (()=>{
-        const sel=el("select",{id:"tPreset"}); presets.forEach(p=> sel.appendChild(el("option",{value:p.name,text:p.name})));
-        sel.value=db.theme.preset||"Midnight"; return sel;
-      })())
-    ]),
-    el("div",{class:"row"},[
-      field("Background", el("input",{id:"tBg",type:"color",value:db.theme.bg})),
-      field("Panel",      el("input",{id:"tPanel",type:"color",value:db.theme.panel})),
-      field("Text",       el("input",{id:"tTxt",type:"color",value:db.theme.txt})),
-      field("Accent",     el("input",{id:"tAcc",type:"color",value:db.theme.acc})),
-      field("Good",       el("input",{id:"tGood",type:"color",value:db.theme.good})),
-      field("Bad",        el("input",{id:"tBad",type:"color",value:db.theme.bad}))
-    ]),
-    el("div",{class:"inline",style:"margin-top:8px"},[
-      el("div",{class:"spacer"}),
-      el("button",{id:"tApply",className:"btn primary",text:"Apply Theme"}),
-      el("button",{id:"tReset",className:"btn ghost",text:"Reset to Preset"})
+
+  const themeBox = el("div", { class:"panel" }, [
+    el("h3", {}, "Theme"),
+    (function(){
+      const row = el("div", { class:"row" }, [
+        (function(){
+          const sel = el("select", { id:"tPreset" });
+          themePresets.forEach(p => sel.appendChild(el("option",{value:p.name, text:p.name})));
+          sel.value = db.theme.preset || "Midnight";
+          return el("div", { class:"col" }, [ el("label", {},"Preset"), sel ]);
+        })()
+      ]);
+      return row;
+    })(),
+    (function(){
+      const row = el("div", { class:"row" }, [
+        (function(){ const i=el("input",{id:"tBg",   type:"color", value:db.theme.bg});   return el("div",{class:"col"},[el("label",{},"Background"),i]); })(),
+        (function(){ const i=el("input",{id:"tPanel",type:"color", value:db.theme.panel}); return el("div",{class:"col"},[el("label",{},"Panel"),i]); })(),
+        (function(){ const i=el("input",{id:"tTxt",  type:"color", value:db.theme.txt});   return el("div",{class:"col"},[el("label",{},"Text"),i]); })(),
+        (function(){ const i=el("input",{id:"tAcc",  type:"color", value:db.theme.acc});   return el("div",{class:"col"},[el("label",{},"Accent"),i]); })(),
+        (function(){ const i=el("input",{id:"tGood", type:"color", value:db.theme.good});  return el("div",{class:"col"},[el("label",{},"Good"),i]); })(),
+        (function(){ const i=el("input",{id:"tBad",  type:"color", value:db.theme.bad});   return el("div",{class:"col"},[el("label",{},"Bad"),i]); })()
+      ]);
+      return row;
+    })(),
+    el("div", { class:"inline", style:"margin-top:8px" }, [
+      el("div", { class:"spacer" }),
+      el("button", { id:"tApply", className:"btn primary", text:"Apply Theme" }),
+      el("button", { id:"tReset", className:"btn ghost",   text:"Reset to Preset" })
     ])
   ]);
   host.appendChild(themeBox);
 
   panel.appendChild(host);
 
-  // Category events
-  $("#addCatBtn").addEventListener("click",()=>{
-    const v=$("#newCat").value.trim(); if(!v) return;
-    if(!db.categories.includes(v)) db.categories.push(v); save(); renderSettings();
+  /* ---------- Events ---------- */
+  // Categories
+  $("#addCatBtn").addEventListener("click", ()=>{
+    const v = $("#newCat").value.trim();
+    if (!v) return;
+    if (!db.categories.includes(v)) db.categories.push(v);
+    save(); renderSettings();
   });
 
-  // Bills events + list
-  $("#bAdd").addEventListener("click",()=>{
-    const name=$("#bName").value.trim(), amt=parseNum($("#bAmt").value), day=Math.max(1,Math.min(31,Number($("#bDay").value||"0"))), cat=$("#bCat").value||"";
-    if(!name || !amt || !day){ alert("Please fill bill name, amount and due day."); return; }
-    db.bills.push({id:uid(), name, amount:amt, dueDay:day, category:cat}); save(); renderSettings();
+  // Bills
+  $("#bAdd").addEventListener("click", ()=>{
+    const name = $("#bName").value.trim();
+    const amt  = parseNum($("#bAmt").value);
+    const day  = Math.max(1, Math.min(31, Number($("#bDay").value||"0")));
+    const cat  = $("#bCat").value || "";
+    if (!name || !amt || !day) { alert("Please fill bill name, amount and due day."); return; }
+    db.bills.push({ id:uid(), name, amount:amt, dueDay:day, category:cat });
+    save(); renderSettings();
   });
 
   function renderBillsList(){
-    const list=billsBox.querySelector("#billsList"); list.innerHTML="";
-    if(!db.bills.length){ list.appendChild(el("div",{class:"muted"},"No bills yet. Add one above.")); return; }
-    const pkId=$("#pkSelect").value || db.paychecks[0]?.id;
+    const list = billsBox.querySelector("#billsList");
+    list.innerHTML = "";
+    if (!db.bills.length){ list.appendChild(el("div",{class:"muted"},"No bills yet. Add one above.")); return; }
+    const pkId = $("#pkSelect").value || db.paychecks[0]?.id;
 
     db.bills.slice().sort((a,b)=>a.dueDay-b.dueDay).forEach(b=>{
-      const reserved=db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Reserved");
-      const paid=db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Paid");
-      const status= paid ? "✅ Paid" : reserved ? "🟡 Reserved" : "⚪ Not set";
+      const reserved = db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Reserved");
+      const paid     = db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Paid");
+      const status   = paid ? "✅ Paid" : reserved ? "🟡 Reserved" : "⚪ Not set";
 
-      const row=el("div",{class:"inline",style:"gap:8px; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid #1f2937"},[
+      const row = el("div",{class:"inline",style:"gap:8px; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid #1f2937"},[
         el("span",{class:"pill"},b.name),
         el("span",{class:"pill"},currency(b.amount)),
         el("span",{class:"pill"},"Due "+b.dueDay),
@@ -603,23 +634,23 @@ function renderSettings(){
         el("span",{class:"pill"},status),
         el("div",{class:"spacer"}),
         (()=>{
-          const reserveBtn=el("button",{className:"btn primary"},["💰 Reserve"]);
-          reserveBtn.disabled=!!reserved || !!paid;
-          reserveBtn.addEventListener("click",()=>{
-            if(!pkId){ alert("Create a paycheck first."); return; }
-            db.allocations.push({id:uid(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Reserved"});
+          const reserveBtn = el("button",{className:"btn primary"},["💰 Reserve"]);
+          reserveBtn.disabled = !!reserved || !!paid;
+          reserveBtn.addEventListener("click", ()=>{
+            if (!pkId){ alert("Create a paycheck first."); return; }
+            db.allocations.push({ id:uid(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Reserved" });
             save(); refreshDashboard(); renderSettings(); alert(`Reserved ${currency(b.amount)} for ${b.name}.`);
           });
           return reserveBtn;
         })(),
         (()=>{
-          const payBtn=el("button",{className:"btn ghost"},["✅ Mark Paid"]);
-          payBtn.disabled=!!paid;
-          payBtn.addEventListener("click",()=>{
-            if(!pkId){ alert("Create a paycheck first."); return; }
-            const res=db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Reserved");
-            if(res) res.status="Paid"; else db.allocations.push({id:uid(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Paid"});
-            // Create a real transaction for the bill payment
+          const payBtn = el("button",{className:"btn ghost"},["✅ Mark Paid"]);
+          payBtn.disabled = !!paid;
+          payBtn.addEventListener("click", ()=>{
+            if (!pkId){ alert("Create a paycheck first."); return; }
+            const res = db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Reserved");
+            if (res) res.status = "Paid";
+            else db.allocations.push({ id:uid(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Paid" });
             db.txns.push({
               id:uid(), paycheckId:pkId, type:TxnType.otherDebit,
               status: db.settings.defaultStatus || TxnStatus.processing,
@@ -631,10 +662,11 @@ function renderSettings(){
           return payBtn;
         })(),
         (()=>{
-          const del=el("button",{className:"btn danger"},["🗑️ Delete"]);
-          del.addEventListener("click",()=>{
-            if(confirm(`Delete ${b.name}? (template only)`)){
-              db.bills=db.bills.filter(x=>x.id!==b.id); save(); renderSettings();
+          const del = el("button",{className:"btn danger"},["🗑️ Delete"]);
+          del.addEventListener("click", ()=>{
+            if (confirm(`Delete ${b.name}? (template only)`)){
+              db.bills = db.bills.filter(x=>x.id!==b.id);
+              save(); renderSettings();
             }
           });
           return del;
@@ -646,34 +678,30 @@ function renderSettings(){
   renderBillsList();
 
   // Theme events
-  $("#tPreset").addEventListener("change",()=>{
-    const p=[...document.querySelectorAll("#tPreset option")].find(x=>x.value===$("#tPreset").value);
-  });
-  const presets=[
-    {name:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e"},
-    {name:"Ocean",    bg:"#0b1020", panel:"#0f1a2f", txt:"#e6f7ff", acc:"#3ea8ff", good:"#00d19a", bad:"#ff6b6b"},
-    {name:"Forest",   bg:"#0e1512", panel:"#12201a", txt:"#e6f4ea", acc:"#34d399", good:"#22c55e", bad:"#ef4444"},
-    {name:"Sunset",   bg:"#201016", panel:"#2a1820", txt:"#ffe9ee", acc:"#ff6b9a", good:"#f6c84c", bad:"#ff7575"}
-  ];
-  document.querySelector("#tPreset").addEventListener("change",()=>{
-    const p=presets.find(x=>x.name===$("#tPreset").value); if(!p) return;
-    db.theme={preset:p.name, ...p}; save(); applyTheme(db.theme);
+  $("#tPreset").addEventListener("change", ()=>{
+    const p = themePresets.find(x => x.name === $("#tPreset").value);
+    if (!p) return;
+    db.theme = { preset:p.name, ...p }; save(); applyTheme(db.theme);
     $("#tBg").value=p.bg; $("#tPanel").value=p.panel; $("#tTxt").value=p.txt; $("#tAcc").value=p.acc; $("#tGood").value=p.good; $("#tBad").value=p.bad;
   });
-  $("#tApply").addEventListener("click",()=>{
-    db.theme={ preset:$("#tPreset").value||db.theme.preset,
-      bg:$("#tBg").value, panel:$("#tPanel").value, txt:$("#tTxt").value,
-      acc:$("#tAcc").value, good:$("#tGood").value, bad:$("#tBad").value };
+
+  $("#tApply").addEventListener("click", ()=>{
+    db.theme = {
+      preset: $("#tPreset").value || db.theme.preset,
+      bg:  $("#tBg").value,  panel:$("#tPanel").value, txt: $("#tTxt").value,
+      acc: $("#tAcc").value, good: $("#tGood").value,  bad: $("#tBad").value
+    };
     save(); applyTheme(db.theme); alert("Theme applied.");
   });
-  $("#tReset").addEventListener("click",()=>{
-    const p=presets.find(x=>x.name===$("#tPreset").value) || presets[0];
-    db.theme={preset:p.name, ...p}; save(); applyTheme(db.theme);
+
+  $("#tReset").addEventListener("click", ()=>{
+    const p = themePresets.find(x=>x.name === $("#tPreset").value) || themePresets[0];
+    db.theme = { preset:p.name, ...p }; save(); applyTheme(db.theme);
     $("#tBg").value=p.bg; $("#tPanel").value=p.panel; $("#tTxt").value=p.txt; $("#tAcc").value=p.acc; $("#tGood").value=p.good; $("#tBad").value=p.bad;
   });
 }
 
-/* ================== HEADER BUTTONS ================== */
+  /* ================== HEADER BUTTONS ================== */
 $("#btnAddPk").addEventListener("click", addPaycheckForm);
 $("#btnAddTxn").addEventListener("click", ()=> addTxnForm($("#txPkSelect").value));
 $("#btnQuickTxn").addEventListener("click", ()=> addTxnForm($("#pkSelect").value));
@@ -690,16 +718,26 @@ $("#btnExport").addEventListener("click",()=>{
   const url=URL.createObjectURL(blob); const a=document.createElement("a");
   a.href=url; a.download="true-balance-backup.json"; a.click(); URL.revokeObjectURL(url);
 });
-$("#btnImport").addEventListener("click",()=> $("#fileImport").click());
+$("#btnImport").addEventListener("click", ()=> $("#fileImport").click());
 $("#fileImport").addEventListener("change", async (e)=>{
-  const f=e.target.files?.[0]; if(!f) return;
+  const f = (e.target.files && e.target.files[0]) || null;   // Safari-safe
+  if (!f) return;
   try{
-    const text=await f.text(); const data=JSON.parse(text);
-    if(!data.paychecks || !data.txns || !data.settings) throw new Error("Invalid backup file.");
-    data.categories ||= db.categories; data.bills ||= db.bills; data.allocations ||= db.allocations; data.theme ||= db.theme;
-    db=data; save(); refreshAll(); alert("Import complete.");
-  }catch(err){ alert("Import failed: "+err.message); }
+    const text = await f.text();
+    const data = JSON.parse(text);
+    if (!data.paychecks || !data.txns || !data.settings) throw new Error("Invalid backup file.");
+    data.categories ||= db.categories;
+    data.bills      ||= db.bills;
+    data.allocations||= db.allocations;
+    data.theme      ||= db.theme;
+    db = data; save();
+    refreshAll();
+    alert("Import complete.");
+  }catch(err){
+    alert("Import failed: " + err.message);
+  }
 });
+
 
 /* ================== INITIAL RENDER ================== */
 function refreshAll(){ refreshPaycheckSelects(); $("#txPkSelect").value=$("#pkSelect").value; refreshDashboard(); refreshTransactions(); refreshPaychecksList(); renderSettings(); }
