@@ -4,25 +4,28 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>True Balance — Paycheck Budget Tracker</title>
+
+<!-- iPhone PWA bits so “Add to Home Screen” works nicely -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="True Balance">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='100%25' height='100%25' fill='%230b84ff'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial' font-size='96' fill='white'%3E%24%3C/text%3E%3C/svg%3E">
+
 <style>
   :root{
-    --bg: #0d1117; --panel: #111827; --muted: #6b7280; --txt: #e5e7eb;
-    --acc: #60a5fa; --good: #10b981; --bad: #f43f5e; --chip: #1f2937;
+    --bg:#0d1117; --panel:#111827; --muted:#6b7280; --txt:#e5e7eb;
+    --acc:#60a5fa; --good:#10b981; --bad:#f43f5e; --chip:#1f2937;
   }
   *{box-sizing:border-box}
   body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial;
-        color:var(--txt); background:linear-gradient(180deg,#0b1220,#0d1117 40%); min-height:100vh; }
+        color:var(--txt); background:linear-gradient(180deg,var(--bg),var(--bg) 40%); min-height:100vh; }
   header{ position:sticky; top:0; z-index:10; background:rgba(13,17,23,.7); backdrop-filter:blur(8px); border-bottom:1px solid #1f2937; }
-  .wrap{ padding:16px; max-width:840px; margin:0 auto;}
+  .wrap{ padding:16px; max-width:960px; margin:0 auto;}
   h1{font-size:20px; margin:0;}
   .tabs{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
   .tab{ padding:10px 12px; border-radius:10px; background:var(--chip); color:#d1d5db; border:1px solid #263141; cursor:pointer; }
   .tab.active{ background:#172135; color:#fff; border-color:#2b3a52}
-  .panel{ background:rgba(17,24,39,.7); border:1px solid #263141; border-radius:14px; padding:16px; margin:16px auto; }
+  .panel{ background:var(--panel); border:1px solid #263141; border-radius:14px; padding:16px; margin:16px auto; }
   .row{ display:flex; gap:12px; flex-wrap:wrap }
   .col{ flex:1 1 240px }
   label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
@@ -36,7 +39,7 @@
   .grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px }
   .metric{ padding:12px; border-radius:12px; background:#0f172a; border:1px solid #263141 }
   .metric h3{ margin:0; font-size:13px; color:#cbd5e1 }
-  .metric .val{ font-size:22px; margin-top:4px; font-weight:700 }
+  .metric .val{ font-size:24px; margin-top:4px; font-weight:700 }
   .muted{ color:var(--muted) }
   .good{ color:var(--good) }
   .bad{ color:var(--bad) }
@@ -46,39 +49,19 @@
   .pill{ font-size:12px; padding:4px 8px; border-radius:999px; background:#0f172a; border:1px solid #263141; color:#cbd5e1; }
   .right{ text-align:right }
   .footer-note{ font-size:12px; color:#94a3b8; }
-  .inline{ display:flex; gap:8px; align-items:center }
+  .inline{ display:flex; gap:8px; align-items:center; flex-wrap:wrap }
   .spacer{ flex:1 }
- /* --- Button fixes & variants --- */
-button.btn {
-  display: inline-flex; align-items: center; justify-content: center;
-  gap: 8px; padding: 10px 14px; min-width: 120px;  /* <- keeps text visible */
-  border-radius: 10px; border: 1px solid #2b3a52; background: #1b2942;
-  color: #e5e7eb; font-weight: 600; letter-spacing: .2px;
-}
-button.btn.primary { background: var(--acc); border-color: #1d4ed8; }
-button.btn.ghost   { background: #0f172a; border-color: #263141; }
-button.btn.danger  { background: #3b1b24; border-color: #7f1d1d; }
-button .emoji { font-size: 16px; line-height: 1; } 
-/* Theme Styles */
-body.light-theme {
-  background-color: #ffffff;
-  color: #000000;
-}
 
-body.dark-theme {
-  background-color: #121212;
-  color: #ffffff;
-}
-
-body.pink-theme {
-  background-color: #ffe6f2;
-  color: #800040;
-}
-
-body.blue-theme {
-  background-color: #e6f0ff;
-  color: #003366;
-}
+  /* Clear, labeled action buttons */
+  button.btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    min-width:120px; padding:10px 14px; border-radius:10px; border:1px solid #2b3a52;
+    background:#1b2942; color:#e5e7eb; font-weight:600; letter-spacing:.2px;
+  }
+  button.btn.primary{ background:var(--acc); border-color:#1d4ed8; color:#07111e; }
+  button.btn.ghost{ background:#0f172a; border-color:#263141; }
+  button.btn.danger{ background:#3b1b24; border-color:#7f1d1d; }
+  button .emoji{ font-size:16px; line-height:1; }
 </style>
 </head>
 <body>
@@ -88,9 +71,9 @@ body.blue-theme {
       <h1>True Balance</h1>
       <div class="spacer"></div>
       <button id="btnExport">Export</button>
-      <label class="pill" style="margin-left:8px">
+      <label class="pill" style="margin-left:8px; cursor:pointer">
         <input type="file" id="fileImport" style="display:none">
-        <span id="btnImport" style="cursor:pointer">Import</span>
+        <span id="btnImport">Import</span>
       </label>
     </div>
     <div class="tabs" id="tabs">
@@ -118,9 +101,10 @@ body.blue-theme {
 
     <div class="grid" style="margin-top:10px">
       <div class="metric"><h3>True Available</h3><div class="val" id="mTrue">$0.00</div></div>
-      <div class="metric"><h3>Bank-Shown Balance</h3><div class="val" id="mBank">$0.00</div></div>
+      <div class="metric"><h3>Bank-Shown</h3><div class="val" id="mBank">$0.00</div></div>
       <div class="metric"><h3>Processing Cushion</h3><div class="val" id="mCushion">$0.00</div></div>
       <div class="metric" id="reserveBox" style="display:none"><h3>Reserved for Unpaid Card Charges</h3><div class="val bad" id="mReserve">-$0.00</div></div>
+      <div class="metric"><h3>Bills Reserved</h3><div class="val bad" id="mBillsRes">-$0.00</div></div>
     </div>
 
     <div class="panel" style="margin-top:16px">
@@ -138,7 +122,7 @@ body.blue-theme {
     </div>
     <div class="panel" style="margin-top:12px; overflow:auto">
       <table id="txTable">
-        <thead><tr><th>Date</th><th>Type</th><th>Note</th><th class="right">Amount</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Type</th><th>Note</th><th>Category</th><th class="right">Amount</th><th>Status</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
@@ -161,130 +145,228 @@ body.blue-theme {
       </div>
     </div>
     <p class="footer-note" style="margin-top:10px">
-      If ON, the app immediately earmarks money in checking for all new card charges that haven’t been paid off yet. This prevents you from overestimating what’s truly available.
+      If ON, the app immediately earmarks money in checking for all new credit-card charges that haven’t been paid off yet. This keeps “True Available” honest.
     </p>
+
+    <!-- Dynamic Categories, Bills, Theme panels will be injected here by JS -->
     <div style="margin-top:16px"><button id="btnReset" class="warn">Reset All Data</button></div>
   </section>
 
   <section class="panel" id="help" aria-label="help" style="display:none">
     <h2 style="margin-top:0">How to use</h2>
     <ol>
-      <li><b>On payday</b>: add a Paycheck with the date, net amount, and your <i>starting checking balance</i> (what your bank shows after the paycheck clears).</li>
+      <li><b>On payday</b>: add a Paycheck with date, net amount, and your <i>starting checking balance</i> (what your bank shows after the paycheck clears).</li>
       <li><b>Log spending</b>: <b>Card Charge</b> for CC purchases, <b>Card Payment</b> when you initiate payoff, <b>Other Debit</b> for checking outflows, <b>Deposit</b> for extra income.</li>
-      <li>Statuses: <b>Pending/Processing</b> don’t show in your bank yet; <b>Cleared</b> does.</li>
-      <li><b>True Available</b> = Bank-Shown + (pending/processing inflows/outflows) − (unpaid card charge reserve, if enabled).</li>
+      <li>Statuses: <b>Pending/Processing</b> haven’t hit checking yet; <b>Cleared</b> has.</li>
+      <li><b>Reserve bills</b> in Settings so money is set aside immediately; tap <b>Mark Paid</b> when you actually pay.</li>
+      <li><b>True Available</b> = Bank-Shown + (pending/processing inflows/outflows) − (unpaid card reserve + bill reserves).</li>
       <li>Use <b>Export</b> to backup JSON. Use <b>Import</b> to restore.</li>
-      <li>In Safari, tap <b>Share → Add to Home Screen</b> for an app-like experience.</li>
     </ol>
   </section>
 </main>
 
+<!-- Modal -->
 <div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:50; align-items:center; justify-content:center; padding:16px">
   <div id="modalCard" class="panel" style="max-width:560px; width:100%; max-height:85vh; overflow:auto"></div>
 </div>
 
 <script>
+/* ================== STORAGE & MODELS ================== */
 const LS_KEY = "true-balance-v1";
+
 const TxnType = { cardCharge:"Card Charge", cardPayment:"Card Payment", deposit:"Deposit", otherDebit:"Other Debit" };
 const TxnStatus = { pending:"Pending", processing:"Processing", cleared:"Cleared" };
 
 let db = JSON.parse(localStorage.getItem(LS_KEY) || "null");
 if(!db){
-  db = { paychecks: [], txns: [], settings: { autoReserveCardCharges: true, defaultStatus: "Processing" } };
-  const pkId = crypto.randomUUID();
-  db.paychecks.push({ id: pkId, date: new Date().toISOString().slice(0,10), label: "Current Paycheck", netAmount: 1700, startingChecking: 2400, isClosed:false });
+  const pkId = (crypto?.randomUUID?.() || String(Math.random()));
+  db = {
+    paychecks: [{ id: pkId, date: new Date().toISOString().slice(0,10), label: "Current Paycheck", netAmount: 1700, startingChecking: 2400, isClosed:false }],
+    txns: [],
+    settings: { autoReserveCardCharges: true, defaultStatus: "Processing" },
+    categories: ["Rent","Groceries","Gas","Eating Out","Phone","Utilities","Insurance","Debt","Subscriptions","Business","Health","Misc"],
+    bills: [],
+    allocations: [],  // per-paycheck bill reservations/paid: {id,billId,paycheckId,amount,status}
+    theme: { preset:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e" }
+  };
+  seedBills(); save();
+} else {
+  db.categories ||= ["Rent","Groceries","Gas","Eating Out","Phone","Utilities","Insurance","Debt","Subscriptions","Business","Health","Misc"];
+  db.bills ||= []; db.allocations ||= [];
+  db.theme ||= { preset:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e" };
+  if(!db.bills.length) seedBills();
   save();
 }
+
 function save(){ localStorage.setItem(LS_KEY, JSON.stringify(db)); }
 function currency(n){ const v=Number(n||0); return v.toLocaleString(undefined,{style:"currency",currency:"USD"}); }
 function parseNum(val){ return Math.max(0, Number((val||"").toString().replace(/[^0-9.\-]/g,"")) || 0); }
-
-function computeRollup(pkId){
-  const pk = db.paychecks.find(p=>p.id===pkId);
-  if(!pk){ return {bankShown:0,trueAvailable:0,processingCushion:0,reservedForUnpaidCardCharges:0,start:0,net:0};}
-  const txns = db.txns.filter(t=>t.paycheckId===pkId);
-  const sum = (types, statuses)=> txns
-    .filter(t=> types.includes(t.type) && statuses.includes(t.status))
-    .reduce((acc,t)=> acc + (t.type==="Deposit" ? t.amount : (t.type==="Card Charge"||t.type==="Other Debit"||t.type==="Card Payment" ? -t.amount : 0)), 0);
-  const cleared = sum(Object.values(TxnType), [TxnStatus.cleared]);
-  const pendProc = sum(Object.values(TxnType), [TxnStatus.pending, TxnStatus.processing]);
-  const bankShown = pk.startingChecking + cleared;
-  const cardChargesTotal = txns.filter(t=>t.type===TxnType.cardCharge).reduce((a,t)=>a+t.amount,0);
-  const cardPaymentsTotal = txns.filter(t=>t.type===TxnType.cardPayment).reduce((a,t)=>a+t.amount,0);
-  const unpaidCardCharges = Math.max(0, cardChargesTotal - cardPaymentsTotal);
-  const reserve = db.settings.autoReserveCardCharges ? unpaidCardCharges : 0;
-  const trueAvailable = bankShown + pendProc - reserve;
-  return { bankShown, trueAvailable, processingCushion: trueAvailable - bankShown, reservedForUnpaidCardCharges: reserve, start: pk.startingChecking, net: pk.netAmount };
+function seedBills(){
+  const add=(name,amt,day,cat)=> db.bills.push({id:crypto.randomUUID(), name, amount:Number(amt), dueDay:Number(day), category:cat});
+  // Pre-filled from your notes (tweak in Settings anytime)
+  add("Rent (1st half)", 850, 1, "Rent");
+  add("Rent (2nd half)", 850, 15, "Rent");
+  add("Phone (Dad share)",140,30,"Phone");
+  add("AAA",156,10,"Insurance");
+  add("Apple Music",11,6,"Subscriptions");
+  add("Gas Budget",125,8,"Gas");
+  add("OpenAI",20,6,"Subscriptions");
+  add("Car Insurance (Auto ds)",49.80,6,"Insurance");
+  add("Therapy",125,12,"Health");
+  add("Digital Launchpad",37,13,"Subscriptions");
+  add("Canva (paused)",15,20,"Subscriptions");
+  add("Photoshop",35,6,"Subscriptions");
+  add("Amazon",16,18,"Subscriptions");
+  add("iCloud",10,21,"Subscriptions");
+  add("Shopify",40,25,"Business");
+  add("CapCut",20,19,"Subscriptions");
 }
 
+/* ================== THEME ================== */
+function applyTheme(t){
+  const r = document.documentElement.style;
+  r.setProperty('--bg',   t.bg);
+  r.setProperty('--panel',t.panel);
+  r.setProperty('--txt',  t.txt);
+  r.setProperty('--acc',  t.acc);
+  r.setProperty('--good', t.good);
+  r.setProperty('--bad',  t.bad);
+}
+applyTheme(db.theme);
+
+/* ================== HELPERS / DOM ================== */
 function $(sel){ return document.querySelector(sel); }
 function el(tag, attrs={}, children=[]){
-  const e = document.createElement(tag);
-  Object.entries(attrs).forEach(([k,v])=>{ if(k==="class") e.className=v; else if(k==="style") e.setAttribute("style",v); else e[k]=v; });
-  (Array.isArray(children)?children:[children]).forEach(c=>{ if(c==null) return; if(typeof c==="string") e.appendChild(document.createTextNode(c)); else e.appendChild(c); });
+  const e=document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{
+    if(k==="className") e.className=v;
+    else if(k==="class") e.setAttribute("class", v);
+    else if(k==="style") e.setAttribute("style", v);
+    else if(k==="text") e.textContent=v;
+    else e[k]=v;
+  });
+  (Array.isArray(children)?children:[children]).forEach(c=>{
+    if(c==null) return;
+    if(typeof c==="string") e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  });
   return e;
 }
+function metric(title, val){ return el("div",{class:"metric"},[ el("h3",{},title), el("div",{class:"val"}, val) ]); }
 
+/* ================== TABS ================== */
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
     document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
     t.classList.add("active");
-    const tab = t.dataset.tab;
-    document.querySelectorAll("main section.panel").forEach(s=> s.style.display = (s.id===tab?"block":"none"));
+    const tab=t.dataset.tab;
+    document.querySelectorAll("main section.panel").forEach(s=> s.style.display=(s.id===tab?"block":"none"));
   });
 });
 
+/* ================== ROLLUPS ================== */
+function computeRollup(pkId){
+  const pk = db.paychecks.find(p=>p.id===pkId);
+  if(!pk) return { bankShown:0, trueAvailable:0, processingCushion:0, reservedForUnpaidCardCharges:0, reservedBills:0, start:0, net:0 };
+
+  const txns = db.txns.filter(t=>t.paycheckId===pkId);
+
+  // Bank-shown = startingChecking + cleared inflows - cleared outflows (that affect checking)
+  const clearedDeposits = txns.filter(t=>t.status===TxnStatus.cleared && t.type===TxnType.deposit).reduce((a,t)=>a+t.amount,0);
+  const clearedOut = txns.filter(t=>t.status===TxnStatus.cleared && (t.type===TxnType.otherDebit || t.type===TxnType.cardPayment)).reduce((a,t)=>a+t.amount,0);
+  const bankShown = pk.startingChecking + clearedDeposits - clearedOut;
+
+  // Pending/processing items that will hit checking (deposits positive, debits negative)
+  const pendDeposits = txns.filter(t=> (t.status===TxnStatus.pending||t.status===TxnStatus.processing) && t.type===TxnType.deposit).reduce((a,t)=>a+t.amount,0);
+  const pendOut = txns.filter(t=> (t.status===TxnStatus.pending||t.status===TxnStatus.processing) && (t.type===TxnType.otherDebit || t.type===TxnType.cardPayment)).reduce((a,t)=>a+t.amount,0);
+  const pendProc = pendDeposits - pendOut;
+
+  // Unpaid card charges reserve = total card charges - total card payments (all statuses)
+  const cardChargesTotal = txns.filter(t=>t.type===TxnType.cardCharge).reduce((a,t)=>a+t.amount,0);
+  const cardPaymentsTotal = txns.filter(t=>t.type===TxnType.cardPayment).reduce((a,t)=>a+t.amount,0);
+  const reserveCC = Math.max(0, cardChargesTotal - cardPaymentsTotal);
+  const reserveForUnpaidCardCharges = db.settings.autoReserveCardCharges ? reserveCC : 0;
+
+  // Bills reserved for this paycheck (allocations still "Reserved")
+  const reservedBills = db.allocations.filter(a=>a.paycheckId===pkId && a.status==="Reserved").reduce((s,a)=>s+a.amount,0);
+
+  const trueAvailable = bankShown + pendProc - reserveForUnpaidCardCharges - reservedBills;
+
+  return {
+    bankShown, trueAvailable,
+    processingCushion: trueAvailable - bankShown,
+    reservedForUnpaidCardCharges, reservedBills,
+    start: pk.startingChecking, net: pk.netAmount
+  };
+}
+
+/* ================== SELECTS / METRICS ================== */
 function refreshPaycheckSelects(){
-  const opts = db.paychecks.sort((a,b)=> new Date(b.date)-new Date(a.date))
-    .map(p=> el("option",{value:p.id, text:`${p.label} — ${p.date}`}) );
-  const pkSel=$("#pkSelect"), txPkSel=$("#txPkSelect");
-  [pkSel, txPkSel].forEach(sel=>{
-    const cur = sel.value; sel.innerHTML=""; opts.forEach(o=> sel.appendChild(o.cloneNode(true)));
-    if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
-    else if(sel.options.length) sel.selectedIndex=0;
+  const opts = db.paychecks.slice().sort((a,b)=> new Date(b.date)-new Date(a.date))
+    .map(p=> el("option",{value:p.id, text:`${p.label} — ${p.date}`}));
+  const pkSel=$("#pkSelect"), txSel=$("#txPkSelect");
+  [pkSel, txSel].forEach(sel=>{
+    const cur=sel.value; sel.innerHTML="";
+    opts.forEach(o=> sel.appendChild(o.cloneNode(true)));
+    if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur; else if(sel.options.length) sel.selectedIndex=0;
   });
 }
+
 function refreshDashboard(){
-  const pkId = $("#pkSelect").value;
-  if(!pkId){ ["#mTrue","#mBank","#mCushion","#mStart","#mNet"].forEach(id=> $(id).textContent="$0.00"); return; }
-  const r = computeRollup(pkId);
-  $("#mTrue").textContent = currency(r.trueAvailable);
-  $("#mBank").textContent = currency(r.bankShown);
-  $("#mCushion").textContent = currency(r.processingCushion);
-  $("#mStart").textContent = currency(r.start);
-  $("#mNet").textContent = currency(r.net);
+  const pkId=$("#pkSelect").value;
+  if(!pkId){ ["#mTrue","#mBank","#mCushion","#mStart","#mNet","#mReserve","#mBillsRes"].forEach(id=> $(id).textContent="$0.00"); return; }
+  const r=computeRollup(pkId);
+  $("#mTrue").textContent=currency(r.trueAvailable);
+  $("#mBank").textContent=currency(r.bankShown);
+  $("#mCushion").textContent=currency(r.processingCushion);
+  $("#mStart").textContent=currency(r.start);
+  $("#mNet").textContent=currency(r.net);
   if(db.settings.autoReserveCardCharges && r.reservedForUnpaidCardCharges>0){
-    $("#reserveBox").style.display="block"; $("#mReserve").textContent = "-"+currency(r.reservedForUnpaidCardCharges);
-  } else { $("#reserveBox").style.display="none"; }
+    $("#reserveBox").style.display="block"; $("#mReserve").textContent="-"+currency(r.reservedForUnpaidCardCharges);
+  } else $("#reserveBox").style.display="none";
+  $("#mBillsRes").textContent="-"+currency(r.reservedBills);
 }
+
+/* ================== TRANSACTIONS TABLE ================== */
 function refreshTransactions(){
-  const pkId = $("#txPkSelect").value, tbody=$("#txTable tbody"); tbody.innerHTML="";
+  const pkId=$("#txPkSelect").value;
+  const tbody=$("#txTable tbody"); tbody.innerHTML="";
   db.txns.filter(t=>t.paycheckId===pkId).sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(t=>{
-    const tr = el("tr",{},[
+    const tr=el("tr",{},[
       el("td",{}, new Date(t.date).toLocaleDateString() ),
       el("td",{}, t.type ),
-      el("td",{}, t.note || "" ),
-      el("td",{class:"right"}, (t.type==="Deposit"?"":"+ -")+currency(t.amount).replace("-","") ),
-      el("td",{},(()=>{
+      el("td",{}, t.note||"" ),
+      el("td",{}, t.category||"" ),
+      el("td",{class:"right"}, (t.type===TxnType.deposit ? "" : "-")+currency(t.amount).replace("-","") ),
+      el("td",{}, (()=>{
         const s=el("select"); [TxnStatus.pending,TxnStatus.processing,TxnStatus.cleared].forEach(st=> s.appendChild(el("option",{value:st,text:st})));
-        s.value=t.status; s.addEventListener("change",()=>{ t.status=s.value; save(); refreshDashboard(); }); return s;
+        s.value=t.status; s.addEventListener("change",()=>{ t.status=s.value; save(); refreshDashboard(); });
+        return s;
       })()),
-      el("td",{},(()=>{
-        const del=el("button",{text:"Delete"}); del.addEventListener("click",()=>{ if(confirm("Delete this transaction?")){ db.txns=db.txns.filter(x=>x.id!==t.id); save(); refreshTransactions(); refreshDashboard(); }});
-        return del;
+      el("td",{}, (()=>{
+        const del=el("button",{text:"Delete"}); del.addEventListener("click",()=>{
+          if(confirm("Delete this transaction?")){
+            db.txns=db.txns.filter(x=>x.id!==t.id); save(); refreshTransactions(); refreshDashboard();
+          }
+        }); return del;
       })())
     ]);
-    if(t.type==="Deposit") tr.querySelector("td.right").classList.add("good");
+    if(t.type===TxnType.deposit) tr.querySelector("td.right").classList.add("good");
     tbody.appendChild(tr);
   });
 }
+
+/* ================== PAYCHECKS LIST ================== */
 function refreshPaychecksList(){
   const container=$("#pkList"); container.innerHTML="";
-  db.paychecks.sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(p=>{
+  db.paychecks.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(p=>{
     const roll=computeRollup(p.id);
     const card=el("div",{class:"panel"},[
       el("div",{class:"inline"},[
-        el("div",{},[ el("div",{style:"font-weight:700"},p.label), el("div",{class:"muted",style:"font-size:12px"}, new Date(p.date).toLocaleDateString()) ]),
+        el("div",{},[
+          el("div",{style:"font-weight:700"}, p.label),
+          el("div",{class:"muted",style:"font-size:12px"}, new Date(p.date).toLocaleDateString())
+        ]),
         el("div",{class:"spacer"}), el("span",{class:"pill"}, p.isClosed?"Closed":"Open")
       ]),
       el("div",{class:"grid",style:"margin-top:8px"},[
@@ -293,112 +375,313 @@ function refreshPaychecksList(){
         metric("Processing Cushion", currency(roll.processingCushion))
       ])
     ]);
-    const btn=el("button",{text:"Select"}); btn.addEventListener("click",()=>{ $("#pkSelect").value=p.id; $("#txPkSelect").value=p.id; refreshDashboard(); refreshTransactions();
+
+    // Buttons
+    const btn = el("button",{className:"btn primary"},[el("span",{class:"emoji"},"✅")," Select"]);
+    btn.addEventListener("click",()=>{
+      $("#pkSelect").value=p.id; $("#txPkSelect").value=p.id;
+      refreshDashboard(); refreshTransactions();
       document.querySelectorAll(".tab").forEach(x=> x.classList.toggle("active", x.dataset.tab==="dashboard"));
       document.querySelectorAll("main section.panel").forEach(s=> s.style.display=(s.id==="dashboard"?"block":"none"));
     });
-// Button with labels + emojis
-const btn = el("button",{text:"✅ Select"});
-btn.addEventListener("click",()=>{
-  $("#pkSelect").value = p.id;
-  document.querySelectorAll(".tab").forEach(x=> 
-    x.classList.toggle("active", x.dataset.pk==p.id)
-  );
-  document.querySelectorAll("main section.panel").forEach(s=>
-    s.style.display=(s.id==$("#pkSelect").value)?"":"none"
-  );
-});
 
-const toggle = el("button",{text:(p.isClosed?"🔓 Reopen":"🔒 Close")});
-toggle.addEventListener("click",()=>{
-  p.isClosed = !p.isClosed;
-  toggle.textContent = p.isClosed ? "🔓 Reopen" : "🔒 Close";
-});
+    const toggle = el("button",{className:"btn ghost"},[el("span",{class:"emoji"}, p.isClosed?"🔓":"🔒"), p.isClosed?" Reopen":" Close"]);
+    toggle.addEventListener("click",()=>{ p.isClosed=!p.isClosed; save(); refreshPaychecksList(); });
 
-const trash = el("button",{text:"🗑️ Delete"});
-trash.addEventListener("click",()=>{
-  if(confirm("Are you sure you want to delete this?")){
-    rolls.splice(i,1);
-    save();
-    render();
-  }
-});
+    const trash = el("button",{className:"btn danger"},[el("span",{class:"emoji"},"🗑️")," Delete"]);
+    trash.addEventListener("click",()=>{
+      if(confirm("Delete this paycheck and its transactions?")){
+        db.txns=db.txns.filter(t=>t.paycheckId!==p.id);
+        db.allocations=db.allocations.filter(a=>a.paycheckId!==p.id);
+        db.paychecks=db.paychecks.filter(x=>x.id!==p.id);
+        save(); refreshPaycheckSelects(); refreshDashboard(); refreshTransactions(); refreshPaychecksList();
+      }
+    });
+    const footer=el("div",{class:"inline",style:"gap:8px; margin-top:8px; flex-wrap:wrap"},[btn,toggle,trash]);
+    card.appendChild(footer);
 
-const footer = el("div",
-  {class:"inline",style:"gap:8px; margin-top:8px"},
-  [btn,toggle,trash]
-);
-card.appendChild(footer);
-container.appendChild(card);
+    // Bills checklist for this paycheck
+    const billBox=el("div",{class:"panel",style:"margin-top:8px"},[
+      el("h3",{},"Bills this paycheck"),
+      (()=>{
+        const t=el("table",{style:"width:100%"}), head=el("thead",{}, el("tr",{},[
+          el("th",{},"Bill"), el("th",{},"Due"), el("th",{},"Amount"), el("th",{},"Status")
+        ])), body=el("tbody");
+        t.appendChild(head); t.appendChild(body);
+        db.bills.slice().sort((a,b)=>a.dueDay-b.dueDay).forEach(b=>{
+          const res=db.allocations.find(a=>a.billId===b.id && a.paycheckId===p.id && a.status==="Reserved");
+          const paid=db.allocations.find(a=>a.billId===b.id && a.paycheckId===p.id && a.status==="Paid");
+          const status = paid ? "✅ Paid" : res ? "🟡 Reserved" : "⚪ Not set";
+          body.appendChild(el("tr",{},[
+            el("td",{},b.name), el("td",{},String(b.dueDay)), el("td",{},currency(b.amount)), el("td",{},status)
+          ]));
+        });
+        return t;
+      })()
+    ]);
+    card.appendChild(billBox);
+
+    container.appendChild(card);
   });
 }
-function metric(title,val){ return el("div",{class:"metric"},[ el("h3",{},title), el("div",{class:"val"}, val) ]); }
 
+/* ================== MODAL / FORMS ================== */
 const modal=$("#modal"), modalCard=$("#modalCard");
 function openModal(node){ modalCard.innerHTML=""; modalCard.appendChild(node); modal.style.display="flex"; }
-modal.addEventListener("click",(e)=>{ if(e.target===modal) modal.style.display="none"; });
+modal.addEventListener("click",e=>{ if(e.target===modal) modal.style.display="none"; });
+
+function field(labelText, control){ return el("div",{class:"col"},[ el("label",{},labelText), control ]); }
+function selectFrom(id, arr, val){ const s=el("select",{id}); arr.forEach(x=> s.appendChild(el("option",{value:x, text:x}))); if(val) s.value=val; return s; }
 
 function addPaycheckForm(){
   const form=el("div",{},[
-    el("h2",{}, "Add Paycheck"),
-    el("div",{class:"row"},[ field("Label", el("input",{id:"fLabel",value:"Paycheck"})), field("Date", el("input",{id:"fDate",type:"date",value:new Date().toISOString().slice(0,10)})) ]),
-    el("div",{class:"row"},[ field("Net Amount", el("input",{id:"fNet",placeholder:"1700",inputMode:"decimal"})), field("Starting Checking Balance", el("input",{id:"fStart",placeholder:"2000",inputMode:"decimal"})) ]),
-    el("div",{class:"inline",style:"margin-top:12px"},[ el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"}) ])
+    el("h2",{},"Add Paycheck"),
+    el("div",{class:"row"},[
+      field("Label", el("input",{id:"fLabel", value:"Paycheck"})),
+      field("Date", el("input",{id:"fDate", type:"date", value:new Date().toISOString().slice(0,10)}))
+    ]),
+    el("div",{class:"row"},[
+      field("Net Amount", el("input",{id:"fNet", inputMode:"decimal", placeholder:"1700"})),
+      field("Starting Checking Balance", el("input",{id:"fStart", inputMode:"decimal", placeholder:"2000"}))
+    ]),
+    el("div",{class:"inline",style:"margin-top:12px"},[
+      el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"})
+    ])
   ]);
   const [btnCancel,btnSave]=form.querySelectorAll("button");
   btnCancel.addEventListener("click",()=> modal.style.display="none");
   btnSave.addEventListener("click",()=>{
-    const p={ id:crypto.randomUUID(), label:$("#fLabel").value||"Paycheck", date:$("#fDate").value||new Date().toISOString().slice(0,10),
-              netAmount:parseNum($("#fNet").value), startingChecking:parseNum($("#fStart").value), isClosed:false };
+    const p={ id:crypto.randomUUID(), label:$("#fLabel").value||"Paycheck", date:$("#fDate").value, netAmount:parseNum($("#fNet").value), startingChecking:parseNum($("#fStart").value), isClosed:false };
     db.paychecks.push(p); save(); refreshPaycheckSelects(); refreshDashboard(); refreshPaychecksList(); modal.style.display="none";
   });
   openModal(form);
 }
+
 function addTxnForm(defaultPkId){
   const form=el("div",{},[
-    el("h2",{}, "Add Transaction"),
-    el("div",{class:"row"},[ field("Type", selectFrom("fType", Object.values(TxnType))), field("Status", selectFrom("fStatus", Object.values(TxnStatus), db.settings.defaultStatus)) ]),
-    el("div",{class:"row"},[ field("Amount", el("input",{id:"fAmt",inputMode:"decimal",placeholder:"0.00"})), field("Date", el("input",{id:"fDate",type:"date",value:new Date().toISOString().slice(0,10)})) ]),
+    el("h2",{},"Add Transaction"),
+    el("div",{class:"row"},[
+      field("Type", selectFrom("fType", Object.values(TxnType))),
+      field("Status", selectFrom("fStatus", Object.values(TxnStatus), db.settings.defaultStatus))
+    ]),
+    el("div",{class:"row"},[
+      field("Amount", el("input",{id:"fAmt", inputMode:"decimal", placeholder:"0.00"})),
+      field("Date", el("input",{id:"fDate", type:"date", value:new Date().toISOString().slice(0,10)}))
+    ]),
+    field("Category", (()=>{
+      const s=selectFrom("fCat", db.categories); return s;
+    })()),
     field("Note (merchant, reason…)", el("input",{id:"fNote"})),
-    field("Paycheck",(()=>{
-      const sel=el("select",{id:"fPk"}); db.paychecks.sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(p=> sel.appendChild(el("option",{value:p.id,text:`${p.label} — ${p.date}`})));
-      sel.value = defaultPkId || db.paychecks[0]?.id; return sel; })()),
-    el("div",{class:"inline",style:"margin-top:12px"},[ el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"}) ])
+    field("Paycheck", (()=>{
+      const sel=el("select",{id:"fPk"});
+      db.paychecks.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(p=> sel.appendChild(el("option",{value:p.id, text:`${p.label} — ${p.date}`})));
+      sel.value = defaultPkId || db.paychecks[0]?.id;
+      return sel;
+    })()),
+    el("div",{class:"inline",style:"margin-top:12px"},[
+      el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"})
+    ])
   ]);
   const [btnCancel,btnSave]=form.querySelectorAll("button");
   btnCancel.addEventListener("click",()=> modal.style.display="none");
   btnSave.addEventListener("click",()=>{
-    const t={ id:crypto.randomUUID(), paycheckId:$("#fPk").value, type:$("#fType").value, status:$("#fStatus").value,
-              amount:parseNum($("#fAmt").value), date:$("#fDate").value, note:$("#fNote").value||"" };
+    const t={ id:crypto.randomUUID(), paycheckId:$("#fPk").value, type:$("#fType").value, status:$("#fStatus").value, amount:parseNum($("#fAmt").value), date:$("#fDate").value, category:$("#fCat").value||"", note:$("#fNote").value||"" };
     if(!t.paycheckId || !t.amount){ alert("Please select a paycheck and enter an amount."); return; }
     db.txns.push(t); save(); refreshTransactions(); refreshDashboard(); modal.style.display="none";
   });
   openModal(form);
 }
-function field(labelText, control){ return el("div",{class:"col"},[ el("label",{},labelText), control ]); }
-function selectFrom(id, arr, val){ const s=el("select",{id}); arr.forEach(x=> s.appendChild(el("option",{value:x,text:x}))); if(val) s.value=val; return s; }
 
-$("#btnAddPk").addEventListener("click", addPaycheckForm);
-$("#btnAddTxn").addEventListener("click",()=> addTxnForm($("#txPkSelect").value));
-$("#btnQuickTxn").addEventListener("click",()=> addTxnForm($("#pkSelect").value));
-$("#sAutoReserve").addEventListener("change",(e)=>{ db.settings.autoReserveCardCharges=(e.target.value==="true"); save(); refreshDashboard(); });
-$("#sDefaultStatus").addEventListener("change",(e)=>{ db.settings.defaultStatus=e.target.value; save(); });
-$("#btnReset").addEventListener("click",()=>{ if(confirm("Really erase all data?")){ localStorage.removeItem(LS_KEY); location.reload(); }});
-$("#btnExport").addEventListener("click",()=>{ const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="true-balance-backup.json"; a.click(); URL.revokeObjectURL(url); });
-$("#btnImport").addEventListener("click",()=> $("#fileImport").click());
-$("#fileImport").addEventListener("change", async (e)=>{ const file=e.target.files?.[0]; if(!file) return;
-  try{ const text=await file.text(); const data=JSON.parse(text); if(!data.paychecks||!data.txns||!data.settings) throw new Error("Invalid backup file.");
-    db=data; save(); refreshPaycheckSelects(); refreshDashboard(); refreshTransactions(); refreshPaychecksList(); alert("Import complete."); }catch(err){ alert("Import failed: "+err.message); } });
+/* ================== SETTINGS (Categories, Bills, Theme) ================== */
+function renderSettings(){
+  const panel=$("#settings"); const old=panel.querySelector("#dyn"); if(old) old.remove();
+  const host=el("div",{id:"dyn"});
 
-function initialRender(){
-  refreshPaycheckSelects();
-  $("#sAutoReserve").value = db.settings.autoReserveCardCharges ? "true":"false";
-  $("#sDefaultStatus").value = db.settings.defaultStatus;
-  $("#txPkSelect").value = $("#pkSelect").value;
-  refreshDashboard(); refreshTransactions(); refreshPaychecksList();
+  /* --- Categories manager --- */
+  const catBox=el("div",{class:"panel"},[
+    el("h3",{},"Categories"),
+    el("div",{class:"inline",style:"gap:8px; flex-wrap:wrap"}, db.categories.map(c=> el("span",{class:"pill"},c))),
+    el("div",{class:"row",style:"margin-top:10px"},[
+      field("Add a category", el("input",{id:"newCat",placeholder:"e.g., Subscriptions"})),
+      el("div",{class:"col"},[ el("label",{}," "), el("button",{id:"addCatBtn",className:"primary",text:"+ Add"}) ])
+    ])
+  ]);
+  host.appendChild(catBox);
+
+  /* --- Bills manager (Reserve / Mark Paid) --- */
+  const billsBox=el("div",{class:"panel"},[
+    el("h3",{},"Bills (recurring templates)"),
+    el("div",{id:"billsList"})
+  ]);
+  const addForm=el("div",{class:"row",style:"margin-top:10px"},[
+    field("Bill name", el("input",{id:"bName",placeholder:"Rent"})),
+    field("Amount", el("input",{id:"bAmt",inputMode:"decimal",placeholder:"1200"})),
+    field("Due day (1–31)", el("input",{id:"bDay",inputMode:"numeric",placeholder:"1"})),
+    field("Category", (()=>{
+      const s=selectFrom("bCat", db.categories); return s;
+    })())
+  ]);
+  const addRow=el("div",{class:"inline",style:"margin-top:8px"},[
+    el("div",{class:"spacer"}), el("button",{id:"bAdd",className:"btn primary",text:"+ Add Bill"})
+  ]);
+  billsBox.appendChild(addForm); billsBox.appendChild(addRow); host.appendChild(billsBox);
+
+  /* --- Theme manager --- */
+  const presets=[
+    {name:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e"},
+    {name:"Ocean",    bg:"#0b1020", panel:"#0f1a2f", txt:"#e6f7ff", acc:"#3ea8ff", good:"#00d19a", bad:"#ff6b6b"},
+    {name:"Forest",   bg:"#0e1512", panel:"#12201a", txt:"#e6f4ea", acc:"#34d399", good:"#22c55e", bad:"#ef4444"},
+    {name:"Sunset",   bg:"#201016", panel:"#2a1820", txt:"#ffe9ee", acc:"#ff6b9a", good:"#f6c84c", bad:"#ff7575"}
+  ];
+  const themeBox=el("div",{class:"panel"},[
+    el("h3",{},"Theme"),
+    el("div",{class:"row"},[
+      field("Preset", (()=>{
+        const sel=el("select",{id:"tPreset"}); presets.forEach(p=> sel.appendChild(el("option",{value:p.name,text:p.name})));
+        sel.value=db.theme.preset||"Midnight"; return sel;
+      })())
+    ]),
+    el("div",{class:"row"},[
+      field("Background", el("input",{id:"tBg",type:"color",value:db.theme.bg})),
+      field("Panel",      el("input",{id:"tPanel",type:"color",value:db.theme.panel})),
+      field("Text",       el("input",{id:"tTxt",type:"color",value:db.theme.txt})),
+      field("Accent",     el("input",{id:"tAcc",type:"color",value:db.theme.acc})),
+      field("Good",       el("input",{id:"tGood",type:"color",value:db.theme.good})),
+      field("Bad",        el("input",{id:"tBad",type:"color",value:db.theme.bad}))
+    ]),
+    el("div",{class:"inline",style:"margin-top:8px"},[
+      el("div",{class:"spacer"}),
+      el("button",{id:"tApply",className:"btn primary",text:"Apply Theme"}),
+      el("button",{id:"tReset",className:"btn ghost",text:"Reset to Preset"})
+    ])
+  ]);
+  host.appendChild(themeBox);
+
+  panel.appendChild(host);
+
+  // Category events
+  $("#addCatBtn").addEventListener("click",()=>{
+    const v=$("#newCat").value.trim(); if(!v) return;
+    if(!db.categories.includes(v)) db.categories.push(v); save(); renderSettings();
+  });
+
+  // Bills events + list
+  $("#bAdd").addEventListener("click",()=>{
+    const name=$("#bName").value.trim(), amt=parseNum($("#bAmt").value), day=Math.max(1,Math.min(31,Number($("#bDay").value||"0"))), cat=$("#bCat").value||"";
+    if(!name || !amt || !day){ alert("Please fill bill name, amount and due day."); return; }
+    db.bills.push({id:crypto.randomUUID(), name, amount:amt, dueDay:day, category:cat}); save(); renderSettings();
+  });
+
+  function renderBillsList(){
+    const list=billsBox.querySelector("#billsList"); list.innerHTML="";
+    if(!db.bills.length){ list.appendChild(el("div",{class:"muted"},"No bills yet. Add one above.")); return; }
+    const pkId=$("#pkSelect").value || db.paychecks[0]?.id;
+
+    db.bills.slice().sort((a,b)=>a.dueDay-b.dueDay).forEach(b=>{
+      const reserved=db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Reserved");
+      const paid=db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Paid");
+      const status= paid ? "✅ Paid" : reserved ? "🟡 Reserved" : "⚪ Not set";
+
+      const row=el("div",{class:"inline",style:"gap:8px; flex-wrap:wrap; padding:8px 0; border-bottom:1px solid #1f2937"},[
+        el("span",{class:"pill"},b.name),
+        el("span",{class:"pill"},currency(b.amount)),
+        el("span",{class:"pill"},"Due "+b.dueDay),
+        el("span",{class:"pill"},b.category||"Uncategorized"),
+        el("span",{class:"pill"},status),
+        el("div",{class:"spacer"}),
+        (()=>{
+          const reserveBtn=el("button",{className:"btn primary"},["💰 Reserve"]);
+          reserveBtn.disabled=!!reserved || !!paid;
+          reserveBtn.addEventListener("click",()=>{
+            if(!pkId){ alert("Create a paycheck first."); return; }
+            db.allocations.push({id:crypto.randomUUID(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Reserved"});
+            save(); refreshDashboard(); renderSettings(); alert(`Reserved ${currency(b.amount)} for ${b.name}.`);
+          });
+          return reserveBtn;
+        })(),
+        (()=>{
+          const payBtn=el("button",{className:"btn ghost"},["✅ Mark Paid"]);
+          payBtn.disabled=!!paid;
+          payBtn.addEventListener("click",()=>{
+            if(!pkId){ alert("Create a paycheck first."); return; }
+            const res=db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Reserved");
+            if(res) res.status="Paid"; else db.allocations.push({id:crypto.randomUUID(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Paid"});
+            // Create a real transaction for the bill payment
+            db.txns.push({
+              id:crypto.randomUUID(), paycheckId:pkId, type:TxnType.otherDebit,
+              status: db.settings.defaultStatus || TxnStatus.processing,
+              amount:b.amount, date:new Date().toISOString().slice(0,10),
+              category:b.category||"Bills", note:b.name+" (bill paid)"
+            });
+            save(); refreshTransactions(); refreshDashboard(); renderSettings();
+          });
+          return payBtn;
+        })(),
+        (()=>{
+          const del=el("button",{className:"btn danger"},["🗑️ Delete"]);
+          del.addEventListener("click",()=>{
+            if(confirm(`Delete ${b.name}? (template only)`)){
+              db.bills=db.bills.filter(x=>x.id!==b.id); save(); renderSettings();
+            }
+          });
+          return del;
+        })()
+      ]);
+      list.appendChild(row);
+    });
+  }
+  renderBillsList();
+
+  // Theme events
+  $("#tPreset").addEventListener("change",()=>{
+    const p=presets.find(x=>x.name===$("#tPreset").value); if(!p) return;
+    db.theme={preset:p.name, ...p}; save(); applyTheme(db.theme);
+    $("#tBg").value=p.bg; $("#tPanel").value=p.panel; $("#tTxt").value=p.txt; $("#tAcc").value=p.acc; $("#tGood").value=p.good; $("#tBad").value=p.bad;
+  });
+  $("#tApply").addEventListener("click",()=>{
+    db.theme={ preset:$("#tPreset").value||db.theme.preset,
+      bg:$("#tBg").value, panel:$("#tPanel").value, txt:$("#tTxt").value,
+      acc:$("#tAcc").value, good:$("#tGood").value, bad:$("#tBad").value };
+    save(); applyTheme(db.theme); alert("Theme applied.");
+  });
+  $("#tReset").addEventListener("click",()=>{
+    const p=presets.find(x=>x.name===$("#tPreset").value) || presets[0];
+    db.theme={preset:p.name, ...p}; save(); applyTheme(db.theme);
+    $("#tBg").value=p.bg; $("#tPanel").value=p.panel; $("#tTxt").value=p.txt; $("#tAcc").value=p.acc; $("#tGood").value=p.good; $("#tBad").value=p.bad;
+  });
 }
-initialRender();
+
+/* ================== HEADER BUTTONS ================== */
+$("#btnAddPk").addEventListener("click", addPaycheckForm);
+$("#btnAddTxn").addEventListener("click", ()=> addTxnForm($("#txPkSelect").value));
+$("#btnQuickTxn").addEventListener("click", ()=> addTxnForm($("#pkSelect").value));
+
+$("#sAutoReserve").addEventListener("change",e=>{ db.settings.autoReserveCardCharges=(e.target.value==="true"); save(); refreshDashboard(); });
+$("#sDefaultStatus").addEventListener("change",e=>{ db.settings.defaultStatus=e.target.value; save(); });
+
+$("#btnReset").addEventListener("click",()=>{
+  if(confirm("Really erase all data? This cannot be undone.")){ localStorage.removeItem(LS_KEY); location.reload(); }
+});
+
+$("#btnExport").addEventListener("click",()=>{
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url; a.download="true-balance-backup.json"; a.click(); URL.revokeObjectURL(url);
+});
+$("#btnImport").addEventListener("click",()=> $("#fileImport").click());
+$("#fileImport").addEventListener("change", async (e)=>{
+  const f=e.target.files?.[0]; if(!f) return;
+  try{
+    const text=await f.text(); const data=JSON.parse(text);
+    if(!data.paychecks || !data.txns || !data.settings) throw new Error("Invalid backup file.");
+    data.categories ||= db.categories; data.bills ||= db.bills; data.allocations ||= db.allocations; data.theme ||= db.theme;
+    db=data; save(); refreshAll(); alert("Import complete.");
+  }catch(err){ alert("Import failed: "+err.message); }
+});
+
+/* ================== INITIAL RENDER ================== */
+function refreshAll(){ refreshPaycheckSelects(); $("#txPkSelect").value=$("#pkSelect").value; refreshDashboard(); refreshTransactions(); refreshPaychecksList(); renderSettings(); }
+refreshAll();
 </script>
 </body>
 </html>
