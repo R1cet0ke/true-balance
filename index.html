@@ -48,6 +48,37 @@
   .footer-note{ font-size:12px; color:#94a3b8; }
   .inline{ display:flex; gap:8px; align-items:center }
   .spacer{ flex:1 }
+ /* --- Button fixes & variants --- */
+button.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 8px; padding: 10px 14px; min-width: 120px;  /* <- keeps text visible */
+  border-radius: 10px; border: 1px solid #2b3a52; background: #1b2942;
+  color: #e5e7eb; font-weight: 600; letter-spacing: .2px;
+}
+button.btn.primary { background: var(--acc); border-color: #1d4ed8; }
+button.btn.ghost   { background: #0f172a; border-color: #263141; }
+button.btn.danger  { background: #3b1b24; border-color: #7f1d1d; }
+button .emoji { font-size: 16px; line-height: 1; } 
+/* Theme Styles */
+body.light-theme {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+body.dark-theme {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+body.pink-theme {
+  background-color: #ffe6f2;
+  color: #800040;
+}
+
+body.blue-theme {
+  background-color: #e6f0ff;
+  color: #003366;
+}
 </style>
 </head>
 <body>
@@ -266,10 +297,39 @@ function refreshPaychecksList(){
       document.querySelectorAll(".tab").forEach(x=> x.classList.toggle("active", x.dataset.tab==="dashboard"));
       document.querySelectorAll("main section.panel").forEach(s=> s.style.display=(s.id==="dashboard"?"block":"none"));
     });
-    const toggle=el("button",{text:(p.isClosed?"Reopen":"Close")}); toggle.addEventListener("click",()=>{ p.isClosed=!p.isClosed; save(); refreshPaychecksList(); });
-    const trash=el("button",{text:"Delete"}); trash.addEventListener("click",()=>{ if(confirm("Delete this paycheck and its transactions?")){ db.txns=db.txns.filter(t=>t.paycheckId!==p.id); db.paychecks=db.paychecks.filter(x=>x.id!==p.id); save(); refreshPaycheckSelects(); refreshDashboard(); refreshTransactions(); refreshPaychecksList(); }});
-    const footer=el("div",{class:"inline",style:"gap:8px; margin-top:8px"},[btn,toggle,trash]);
-    card.appendChild(footer); container.appendChild(card);
+// Button with labels + emojis
+const btn = el("button",{text:"✅ Select"});
+btn.addEventListener("click",()=>{
+  $("#pkSelect").value = p.id;
+  document.querySelectorAll(".tab").forEach(x=> 
+    x.classList.toggle("active", x.dataset.pk==p.id)
+  );
+  document.querySelectorAll("main section.panel").forEach(s=>
+    s.style.display=(s.id==$("#pkSelect").value)?"":"none"
+  );
+});
+
+const toggle = el("button",{text:(p.isClosed?"🔓 Reopen":"🔒 Close")});
+toggle.addEventListener("click",()=>{
+  p.isClosed = !p.isClosed;
+  toggle.textContent = p.isClosed ? "🔓 Reopen" : "🔒 Close";
+});
+
+const trash = el("button",{text:"🗑️ Delete"});
+trash.addEventListener("click",()=>{
+  if(confirm("Are you sure you want to delete this?")){
+    rolls.splice(i,1);
+    save();
+    render();
+  }
+});
+
+const footer = el("div",
+  {class:"inline",style:"gap:8px; margin-top:8px"},
+  [btn,toggle,trash]
+);
+card.appendChild(footer);
+container.appendChild(card);
   });
 }
 function metric(title,val){ return el("div",{class:"metric"},[ el("h3",{},title), el("div",{class:"val"}, val) ]); }
