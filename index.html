@@ -431,82 +431,77 @@ function refreshPaychecksList(){
     container.appendChild(card);
   });
 }
+// ================== MODAL / FORMS ==================
+function openModal(node){
+  const modal = $("#modal");
+  const card  = $("#modalCard");
+  card.innerHTML = "";
+  card.appendChild(node);
+  modal.style.display = "flex";
+  modal.style.pointerEvents = "auto";
+  card.style.pointerEvents = "auto";
+}
 
-/* ================== MODAL / FORMS ================== */
-const modal=$("#modal"), modalCard=$("#modalCard");
-function openModal(node){ modalCard.innerHTML=""; modalCard.appendChild(node); modal.style.display="flex"; }
-modal.addEventListener("click",e=>{ if(e.target===modal) modal.style.display="none"; });
-
-function field(labelText, control){ return el("div",{class:"col"},[ el("label",{},labelText), control ]); }
-function selectFrom(id, arr, val){ const s=el("select",{id}); arr.forEach(x=> s.appendChild(el("option",{value:x, text:x}))); if(val) s.value=val; return s; }
+// close when clicking the dark backdrop (but not inside the card)
+$("#modal").addEventListener("click",(e)=>{
+  if (e.target === $("#modal")) $("#modal").style.display = "none";
+});
 
 function addPaycheckForm(){
-  const form=el("div",{},[
+  const today = new Date().toISOString().slice(0,10);
+
+  const form = el("div",{},[
     el("h2",{},"Add Paycheck"),
     el("div",{class:"row"},[
-      field("Label", el("input",{id:"fLabel", value:"Paycheck"})),
-      field("Date", el("input",{id:"fDate", type:"date", value:new Date().toISOString().slice(0,10)}))
+      (function(){ const i=el("input",{id:"fLabel",value:"Paycheck"}); return el("div",{class:"col"},[el("label",{},"Label"), i]); })(),
+      (function(){ const i=el("input",{id:"fDate",type:"date",value:today}); return el("div",{class:"col"},[el("label",{},"Date"), i]); })()
     ]),
     el("div",{class:"row"},[
-      field("Net Amount", el("input",{id:"fNet", inputMode:"decimal", placeholder:"1700"})),
-      field("Starting Checking Balance", el("input",{id:"fStart", inputMode:"decimal", placeholder:"2000"}))
+      (function(){ const i=el("input",{id:"fNet",inputMode:"decimal",placeholder:"1700"}); return el("div",{class:"col"},[el("label",{},"Net Amount"), i]); })(),
+      (function(){ const i=el("input",{id:"fStart",inputMode:"decimal",placeholder:"2000"}); return el("div",{class:"col"},[el("label",{},"Starting Checking Balance"), i]); })()
     ]),
     el("div",{class:"inline",style:"margin-top:12px"},[
-      el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"})
+      el("div",{class:"spacer"}),
+      el("button",{id:"pkCancel",text:"Cancel"}),
+      el("button",{id:"pkSave",className:"primary",text:"Save",style:"margin-left:8px"})
     ])
   ]);
-  const [btnCancel,btnSave]=form.querySelectorAll("button");
-  btnCancel.addEventListener("click",()=> modal.style.display="none");
-  btnSave.addEventListener("click",()=>{
+
+  openModal(form);
+
+  // cancel closes the modal
+  $("#pkCancel").addEventListener("click", ()=> { $("#modal").style.display="none"; });
+
+  // save actually commits the paycheck
+  $("#pkSave").addEventListener("click", ()=>{
+    const label = ($("#fLabel").value || "Paycheck").trim();
+    const date  = $("#fDate").value || today;
     const net   = parseNum($("#fNet").value);
     const start = parseNum($("#fStart").value);
-    const date  = $("#fDate").value || new Date().toISOString().slice(0,10);
-    const label = $("#fLabel").value.trim() || "Paycheck";
+
+    if (!date){ alert("Please choose a date."); return; }
+    if (!net && !start){
+      alert("Enter at least Net Amount or Starting Checking."); return;
+    }
+
     const p = { id: uid(), label, date, netAmount: net, startingChecking: start, isClosed:false };
-    db.paychecks.push(p); save();
-    $("#pkSelect").value = p.id; $("#txPkSelect").value = p.id;
-    refreshDashboard(); refreshTransactions(); refreshPaychecksList();
-    modal.style.display="none";
-    // Jump to Paychecks so you see it
+    db.paychecks.push(p);
+    save();
+
+    // point dropdowns to this paycheck
+    if ($("#pkSelect"))  $("#pkSelect").value  = p.id;
+    if ($("#txPkSelect")) $("#txPkSelect").value = p.id;
+
+    refreshDashboard();
+    refreshTransactions();
+    refreshPaychecksList();
+
+    // close modal and show Paychecks tab
+    $("#modal").style.display = "none";
     document.querySelectorAll(".tab").forEach(x=> x.classList.toggle("active", x.dataset.tab==="paychecks"));
     document.querySelectorAll("main section.panel").forEach(s=> s.style.display=(s.id==="paychecks"?"block":"none"));
   });
-  openModal(form);
 }
-
-function addTxnForm(defaultPkId){
-  const form=el("div",{},[
-    el("h2",{},"Add Transaction"),
-    el("div",{class:"row"},[
-      field("Type", selectFrom("fType", Object.values(TxnType))),
-      field("Status", selectFrom("fStatus", Object.values(TxnStatus), db.settings.defaultStatus))
-    ]),
-    el("div",{class:"row"},[
-      field("Amount", el("input",{id:"fAmt", inputMode:"decimal", placeholder:"0.00"})),
-      field("Date", el("input",{id:"fDate", type:"date", value:new Date().toISOString().slice(0,10)}))
-    ]),
-    field("Category", selectFrom("fCat", db.categories)),
-    field("Note (merchant, reason…)", el("input",{id:"fNote"})),
-    field("Paycheck", (()=>{
-      const sel=el("select",{id:"fPk"});
-      db.paychecks.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(p=> sel.appendChild(el("option",{value:p.id, text:`${p.label} — ${p.date}`})));
-      sel.value = defaultPkId || db.paychecks[0]?.id;
-      return sel;
-    })()),
-    el("div",{class:"inline",style:"margin-top:12px"},[
-      el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"})
-    ])
-  ]);
-  const [btnCancel,btnSave]=form.querySelectorAll("button");
-  btnCancel.addEventListener("click",()=> modal.style.display="none");
-  btnSave.addEventListener("click",()=>{
-    const t={ id:uid(), paycheckId:$("#fPk").value, type:$("#fType").value, status:$("#fStatus").value, amount:parseNum($("#fAmt").value), date:$("#fDate").value, category:$("#fCat").value||"", note:$("#fNote").value||"" };
-    if(!t.paycheckId || !t.amount){ alert("Please select a paycheck and enter an amount."); return; }
-    db.txns.push(t); save(); refreshTransactions(); refreshDashboard(); modal.style.display="none";
-  });
-  openModal(form);
-}
-
 /* ================== SETTINGS (Categories, Bills, Theme) ================== */
 function renderSettings(){
   const panel = $("#settings");
