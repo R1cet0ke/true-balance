@@ -5,36 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>True Balance — Paycheck Budget Tracker</title>
 
-<!-- iPhone PWA bits so “Add to Home Screen” works nicely -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="True Balance">
+<!-- iPhone PWA bits so “Add to Home Screen” works -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="True Balance" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='100%25' height='100%25' fill='%230b84ff'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial' font-size='96' fill='white'%3E%24%3C/text%3E%3C/svg%3E">
 
 <style>
   :root{
-    --bg:#0d1117; --panel:#111827; --muted:#6b7280; --txt:#e5e7eb;
+    /* Theme variables (customizable in Settings) */
+    --bg:#0d1117; --panel:#111827; --muted:#93a3b8; --txt:#e5e7eb;
     --acc:#60a5fa; --good:#10b981; --bad:#f43f5e; --chip:#1f2937;
   }
   *{box-sizing:border-box}
-  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial;
-        color:var(--txt); background:linear-gradient(180deg,var(--bg),var(--bg) 40%); min-height:100vh; }
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial;
+    color:var(--txt); background:linear-gradient(180deg,var(--bg),var(--bg) 40%); min-height:100vh;
+  }
   header{ position:sticky; top:0; z-index:10; background:rgba(13,17,23,.7); backdrop-filter:blur(8px); border-bottom:1px solid #1f2937; }
   .wrap{ padding:16px; max-width:960px; margin:0 auto;}
   h1{font-size:20px; margin:0;}
   .tabs{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
-  .tab{ padding:10px 12px; border-radius:10px; background:var(--chip); color:#d1d5db; border:1px solid #263141; cursor:pointer; }
+  .tab{
+    padding:10px 12px; border-radius:10px; background:var(--chip); color:#d1d5db; border:1px solid #263141; cursor:pointer;
+  }
   .tab.active{ background:#172135; color:#fff; border-color:#2b3a52}
-  .panel{ background:var(--panel); border:1px solid #263141; border-radius:14px; padding:16px; margin:16px auto; }
+  .panel{
+    background:var(--panel); border:1px solid #263141; border-radius:14px; padding:16px; margin:16px auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  }
   .row{ display:flex; gap:12px; flex-wrap:wrap }
   .col{ flex:1 1 240px }
   label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
   input, select, textarea{
     width:100%; padding:12px; border-radius:10px; border:1px solid #374151; background:#0f172a; color:#e5e7eb; outline:none;
   }
-  input:focus, select:focus, textarea:focus{ border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  input:focus, select:focus, textarea:focus{ border-color:var(--acc); box-shadow:0 0 0 3px rgba(96,165,250,.15)}
   button{ padding:12px 14px; border-radius:10px; border:1px solid #2b3a52; background:#1b2942; color:#e5e7eb; cursor:pointer; }
-  button.primary{ background:#2563eb; border-color:#1d4ed8 }
+  button.primary{ background:var(--acc); border-color:#1d4ed8; color:#07111e; }
   button.warn{ background:#3b1b24; border-color:#7f1d1d }
   .grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px }
   .metric{ padding:12px; border-radius:12px; background:#0f172a; border:1px solid #263141 }
@@ -45,7 +53,7 @@
   .bad{ color:var(--bad) }
   table{ width:100%; border-collapse: collapse; }
   th, td{ padding:10px; border-bottom:1px solid #1f2937; text-align:left; font-size:14px }
-  th{ color:#93a3b8; font-weight:600 }
+  th{ color:#cbd5e1; font-weight:600 }
   .pill{ font-size:12px; padding:4px 8px; border-radius:999px; background:#0f172a; border:1px solid #263141; color:#cbd5e1; }
   .right{ text-align:right }
   .footer-note{ font-size:12px; color:#94a3b8; }
@@ -171,22 +179,44 @@
 </div>
 
 <script>
-/* ================== STORAGE & MODELS ================== */
+/* ================== UTIL / STORAGE ================== */
 const LS_KEY = "true-balance-v1";
+function uid(){ try{ if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){} return 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(db)); }
+function currency(n){ const v=Number(n||0); return v.toLocaleString(undefined,{style:"currency",currency:"USD"}); }
+function parseNum(val){ return Math.max(0, Number((val||"").toString().replace(/[^0-9.\-]/g,"")) || 0); }
+function $(sel){ return document.querySelector(sel); }
+function el(tag, attrs={}, children=[]){
+  const e=document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{
+    if(k==="className") e.className=v;
+    else if(k==="class") e.setAttribute("class", v);
+    else if(k==="style") e.setAttribute("style", v);
+    else if(k==="text") e.textContent=v;
+    else e[k]=v;
+  });
+  (Array.isArray(children)?children:[children]).forEach(c=>{
+    if(c==null) return;
+    if(typeof c==="string") e.appendChild(document.createTextNode(c));
+    else e.appendChild(c);
+  });
+  return e;
+}
 
+/* ================== MODELS ================== */
 const TxnType = { cardCharge:"Card Charge", cardPayment:"Card Payment", deposit:"Deposit", otherDebit:"Other Debit" };
 const TxnStatus = { pending:"Pending", processing:"Processing", cleared:"Cleared" };
 
 let db = JSON.parse(localStorage.getItem(LS_KEY) || "null");
 if(!db){
-  const pkId = (crypto?.randomUUID?.() || String(Math.random()));
+  const pkId = uid();
   db = {
     paychecks: [{ id: pkId, date: new Date().toISOString().slice(0,10), label: "Current Paycheck", netAmount: 1700, startingChecking: 2400, isClosed:false }],
     txns: [],
     settings: { autoReserveCardCharges: true, defaultStatus: "Processing" },
     categories: ["Rent","Groceries","Gas","Eating Out","Phone","Utilities","Insurance","Debt","Subscriptions","Business","Health","Misc"],
     bills: [],
-    allocations: [],  // per-paycheck bill reservations/paid: {id,billId,paycheckId,amount,status}
+    allocations: [],  // {id,billId,paycheckId,amount,status: "Reserved" | "Paid"}
     theme: { preset:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e" }
   };
   seedBills(); save();
@@ -198,12 +228,9 @@ if(!db){
   save();
 }
 
-function save(){ localStorage.setItem(LS_KEY, JSON.stringify(db)); }
-function currency(n){ const v=Number(n||0); return v.toLocaleString(undefined,{style:"currency",currency:"USD"}); }
-function parseNum(val){ return Math.max(0, Number((val||"").toString().replace(/[^0-9.\-]/g,"")) || 0); }
 function seedBills(){
-  const add=(name,amt,day,cat)=> db.bills.push({id:crypto.randomUUID(), name, amount:Number(amt), dueDay:Number(day), category:cat});
-  // Pre-filled from your notes (tweak in Settings anytime)
+  const add=(name,amt,day,cat)=> db.bills.push({id:uid(), name, amount:Number(amt), dueDay:Number(day), category:cat});
+  // Pre-filled from your notes (edit anytime in Settings)
   add("Rent (1st half)", 850, 1, "Rent");
   add("Rent (2nd half)", 850, 15, "Rent");
   add("Phone (Dad share)",140,30,"Phone");
@@ -234,26 +261,6 @@ function applyTheme(t){
 }
 applyTheme(db.theme);
 
-/* ================== HELPERS / DOM ================== */
-function $(sel){ return document.querySelector(sel); }
-function el(tag, attrs={}, children=[]){
-  const e=document.createElement(tag);
-  Object.entries(attrs).forEach(([k,v])=>{
-    if(k==="className") e.className=v;
-    else if(k==="class") e.setAttribute("class", v);
-    else if(k==="style") e.setAttribute("style", v);
-    else if(k==="text") e.textContent=v;
-    else e[k]=v;
-  });
-  (Array.isArray(children)?children:[children]).forEach(c=>{
-    if(c==null) return;
-    if(typeof c==="string") e.appendChild(document.createTextNode(c));
-    else e.appendChild(c);
-  });
-  return e;
-}
-function metric(title, val){ return el("div",{class:"metric"},[ el("h3",{},title), el("div",{class:"val"}, val) ]); }
-
 /* ================== TABS ================== */
 document.querySelectorAll(".tab").forEach(t=>{
   t.addEventListener("click", ()=>{
@@ -271,17 +278,17 @@ function computeRollup(pkId){
 
   const txns = db.txns.filter(t=>t.paycheckId===pkId);
 
-  // Bank-shown = startingChecking + cleared inflows - cleared outflows (that affect checking)
+  // Bank-shown = startingChecking + cleared inflows - cleared outflows
   const clearedDeposits = txns.filter(t=>t.status===TxnStatus.cleared && t.type===TxnType.deposit).reduce((a,t)=>a+t.amount,0);
   const clearedOut = txns.filter(t=>t.status===TxnStatus.cleared && (t.type===TxnType.otherDebit || t.type===TxnType.cardPayment)).reduce((a,t)=>a+t.amount,0);
   const bankShown = pk.startingChecking + clearedDeposits - clearedOut;
 
-  // Pending/processing items that will hit checking (deposits positive, debits negative)
+  // Pending/processing items that will hit checking soon
   const pendDeposits = txns.filter(t=> (t.status===TxnStatus.pending||t.status===TxnStatus.processing) && t.type===TxnType.deposit).reduce((a,t)=>a+t.amount,0);
   const pendOut = txns.filter(t=> (t.status===TxnStatus.pending||t.status===TxnStatus.processing) && (t.type===TxnType.otherDebit || t.type===TxnType.cardPayment)).reduce((a,t)=>a+t.amount,0);
   const pendProc = pendDeposits - pendOut;
 
-  // Unpaid card charges reserve = total card charges - total card payments (all statuses)
+  // Unpaid card charge reserve (total charges - total payments)
   const cardChargesTotal = txns.filter(t=>t.type===TxnType.cardCharge).reduce((a,t)=>a+t.amount,0);
   const cardPaymentsTotal = txns.filter(t=>t.type===TxnType.cardPayment).reduce((a,t)=>a+t.amount,0);
   const reserveCC = Math.max(0, cardChargesTotal - cardPaymentsTotal);
@@ -370,9 +377,9 @@ function refreshPaychecksList(){
         el("div",{class:"spacer"}), el("span",{class:"pill"}, p.isClosed?"Closed":"Open")
       ]),
       el("div",{class:"grid",style:"margin-top:8px"},[
-        metric("True Available", currency(roll.trueAvailable)),
-        metric("Bank-Shown", currency(roll.bankShown)),
-        metric("Processing Cushion", currency(roll.processingCushion))
+        (function(){const d=el("div",{class:"metric"}); d.innerHTML='<h3>True Available</h3><div class="val">'+currency(roll.trueAvailable)+'</div>'; return d;})(),
+        (function(){const d=el("div",{class:"metric"}); d.innerHTML='<h3>Bank-Shown</h3><div class="val">'+currency(roll.bankShown)+'</div>'; return d;})(),
+        (function(){const d=el("div",{class:"metric"}); d.innerHTML='<h3>Processing Cushion</h3><div class="val">'+currency(roll.processingCushion)+'</div>'; return d;})()
       ])
     ]);
 
@@ -409,8 +416,8 @@ function refreshPaychecksList(){
         ])), body=el("tbody");
         t.appendChild(head); t.appendChild(body);
         db.bills.slice().sort((a,b)=>a.dueDay-b.dueDay).forEach(b=>{
-          const res=db.allocations.find(a=>a.billId===b.id && a.paycheckId===p.id && a.status==="Reserved");
-          const paid=db.allocations.find(a=>a.billId===b.id && a.paycheckId===p.id && a.status==="Paid");
+          const res=db.allocations.find(a=> a.billId===b.id && a.paycheckId===p.id && a.status==="Reserved");
+          const paid=db.allocations.find(a=> a.billId===b.id && a.paycheckId===p.id && a.status==="Paid");
           const status = paid ? "✅ Paid" : res ? "🟡 Reserved" : "⚪ Not set";
           body.appendChild(el("tr",{},[
             el("td",{},b.name), el("td",{},String(b.dueDay)), el("td",{},currency(b.amount)), el("td",{},status)
@@ -451,8 +458,18 @@ function addPaycheckForm(){
   const [btnCancel,btnSave]=form.querySelectorAll("button");
   btnCancel.addEventListener("click",()=> modal.style.display="none");
   btnSave.addEventListener("click",()=>{
-    const p={ id:crypto.randomUUID(), label:$("#fLabel").value||"Paycheck", date:$("#fDate").value, netAmount:parseNum($("#fNet").value), startingChecking:parseNum($("#fStart").value), isClosed:false };
-    db.paychecks.push(p); save(); refreshPaycheckSelects(); refreshDashboard(); refreshPaychecksList(); modal.style.display="none";
+    const net   = parseNum($("#fNet").value);
+    const start = parseNum($("#fStart").value);
+    const date  = $("#fDate").value || new Date().toISOString().slice(0,10);
+    const label = $("#fLabel").value.trim() || "Paycheck";
+    const p = { id: uid(), label, date, netAmount: net, startingChecking: start, isClosed:false };
+    db.paychecks.push(p); save();
+    $("#pkSelect").value = p.id; $("#txPkSelect").value = p.id;
+    refreshDashboard(); refreshTransactions(); refreshPaychecksList();
+    modal.style.display="none";
+    // Jump to Paychecks so you see it
+    document.querySelectorAll(".tab").forEach(x=> x.classList.toggle("active", x.dataset.tab==="paychecks"));
+    document.querySelectorAll("main section.panel").forEach(s=> s.style.display=(s.id==="paychecks"?"block":"none"));
   });
   openModal(form);
 }
@@ -468,9 +485,7 @@ function addTxnForm(defaultPkId){
       field("Amount", el("input",{id:"fAmt", inputMode:"decimal", placeholder:"0.00"})),
       field("Date", el("input",{id:"fDate", type:"date", value:new Date().toISOString().slice(0,10)}))
     ]),
-    field("Category", (()=>{
-      const s=selectFrom("fCat", db.categories); return s;
-    })()),
+    field("Category", selectFrom("fCat", db.categories)),
     field("Note (merchant, reason…)", el("input",{id:"fNote"})),
     field("Paycheck", (()=>{
       const sel=el("select",{id:"fPk"});
@@ -485,7 +500,7 @@ function addTxnForm(defaultPkId){
   const [btnCancel,btnSave]=form.querySelectorAll("button");
   btnCancel.addEventListener("click",()=> modal.style.display="none");
   btnSave.addEventListener("click",()=>{
-    const t={ id:crypto.randomUUID(), paycheckId:$("#fPk").value, type:$("#fType").value, status:$("#fStatus").value, amount:parseNum($("#fAmt").value), date:$("#fDate").value, category:$("#fCat").value||"", note:$("#fNote").value||"" };
+    const t={ id:uid(), paycheckId:$("#fPk").value, type:$("#fType").value, status:$("#fStatus").value, amount:parseNum($("#fAmt").value), date:$("#fDate").value, category:$("#fCat").value||"", note:$("#fNote").value||"" };
     if(!t.paycheckId || !t.amount){ alert("Please select a paycheck and enter an amount."); return; }
     db.txns.push(t); save(); refreshTransactions(); refreshDashboard(); modal.style.display="none";
   });
@@ -497,7 +512,7 @@ function renderSettings(){
   const panel=$("#settings"); const old=panel.querySelector("#dyn"); if(old) old.remove();
   const host=el("div",{id:"dyn"});
 
-  /* --- Categories manager --- */
+  /* --- Categories --- */
   const catBox=el("div",{class:"panel"},[
     el("h3",{},"Categories"),
     el("div",{class:"inline",style:"gap:8px; flex-wrap:wrap"}, db.categories.map(c=> el("span",{class:"pill"},c))),
@@ -508,7 +523,7 @@ function renderSettings(){
   ]);
   host.appendChild(catBox);
 
-  /* --- Bills manager (Reserve / Mark Paid) --- */
+  /* --- Bills (Reserve / Mark Paid) --- */
   const billsBox=el("div",{class:"panel"},[
     el("h3",{},"Bills (recurring templates)"),
     el("div",{id:"billsList"})
@@ -517,16 +532,14 @@ function renderSettings(){
     field("Bill name", el("input",{id:"bName",placeholder:"Rent"})),
     field("Amount", el("input",{id:"bAmt",inputMode:"decimal",placeholder:"1200"})),
     field("Due day (1–31)", el("input",{id:"bDay",inputMode:"numeric",placeholder:"1"})),
-    field("Category", (()=>{
-      const s=selectFrom("bCat", db.categories); return s;
-    })())
+    field("Category", selectFrom("bCat", db.categories))
   ]);
   const addRow=el("div",{class:"inline",style:"margin-top:8px"},[
     el("div",{class:"spacer"}), el("button",{id:"bAdd",className:"btn primary",text:"+ Add Bill"})
   ]);
   billsBox.appendChild(addForm); billsBox.appendChild(addRow); host.appendChild(billsBox);
 
-  /* --- Theme manager --- */
+  /* --- Theme --- */
   const presets=[
     {name:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e"},
     {name:"Ocean",    bg:"#0b1020", panel:"#0f1a2f", txt:"#e6f7ff", acc:"#3ea8ff", good:"#00d19a", bad:"#ff6b6b"},
@@ -569,7 +582,7 @@ function renderSettings(){
   $("#bAdd").addEventListener("click",()=>{
     const name=$("#bName").value.trim(), amt=parseNum($("#bAmt").value), day=Math.max(1,Math.min(31,Number($("#bDay").value||"0"))), cat=$("#bCat").value||"";
     if(!name || !amt || !day){ alert("Please fill bill name, amount and due day."); return; }
-    db.bills.push({id:crypto.randomUUID(), name, amount:amt, dueDay:day, category:cat}); save(); renderSettings();
+    db.bills.push({id:uid(), name, amount:amt, dueDay:day, category:cat}); save(); renderSettings();
   });
 
   function renderBillsList(){
@@ -594,7 +607,7 @@ function renderSettings(){
           reserveBtn.disabled=!!reserved || !!paid;
           reserveBtn.addEventListener("click",()=>{
             if(!pkId){ alert("Create a paycheck first."); return; }
-            db.allocations.push({id:crypto.randomUUID(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Reserved"});
+            db.allocations.push({id:uid(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Reserved"});
             save(); refreshDashboard(); renderSettings(); alert(`Reserved ${currency(b.amount)} for ${b.name}.`);
           });
           return reserveBtn;
@@ -605,10 +618,10 @@ function renderSettings(){
           payBtn.addEventListener("click",()=>{
             if(!pkId){ alert("Create a paycheck first."); return; }
             const res=db.allocations.find(a=>a.billId===b.id && a.paycheckId===pkId && a.status==="Reserved");
-            if(res) res.status="Paid"; else db.allocations.push({id:crypto.randomUUID(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Paid"});
+            if(res) res.status="Paid"; else db.allocations.push({id:uid(), billId:b.id, paycheckId:pkId, amount:b.amount, status:"Paid"});
             // Create a real transaction for the bill payment
             db.txns.push({
-              id:crypto.randomUUID(), paycheckId:pkId, type:TxnType.otherDebit,
+              id:uid(), paycheckId:pkId, type:TxnType.otherDebit,
               status: db.settings.defaultStatus || TxnStatus.processing,
               amount:b.amount, date:new Date().toISOString().slice(0,10),
               category:b.category||"Bills", note:b.name+" (bill paid)"
@@ -634,6 +647,15 @@ function renderSettings(){
 
   // Theme events
   $("#tPreset").addEventListener("change",()=>{
+    const p=[...document.querySelectorAll("#tPreset option")].find(x=>x.value===$("#tPreset").value);
+  });
+  const presets=[
+    {name:"Midnight", bg:"#0d1117", panel:"#111827", txt:"#e5e7eb", acc:"#60a5fa", good:"#10b981", bad:"#f43f5e"},
+    {name:"Ocean",    bg:"#0b1020", panel:"#0f1a2f", txt:"#e6f7ff", acc:"#3ea8ff", good:"#00d19a", bad:"#ff6b6b"},
+    {name:"Forest",   bg:"#0e1512", panel:"#12201a", txt:"#e6f4ea", acc:"#34d399", good:"#22c55e", bad:"#ef4444"},
+    {name:"Sunset",   bg:"#201016", panel:"#2a1820", txt:"#ffe9ee", acc:"#ff6b9a", good:"#f6c84c", bad:"#ff7575"}
+  ];
+  document.querySelector("#tPreset").addEventListener("change",()=>{
     const p=presets.find(x=>x.name===$("#tPreset").value); if(!p) return;
     db.theme={preset:p.name, ...p}; save(); applyTheme(db.theme);
     $("#tBg").value=p.bg; $("#tPanel").value=p.panel; $("#tTxt").value=p.txt; $("#tAcc").value=p.acc; $("#tGood").value=p.good; $("#tBad").value=p.bad;
