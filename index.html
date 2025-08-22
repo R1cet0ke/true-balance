@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>True Balance — Paycheck Budget Tracker</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="True Balance">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='100%25' height='100%25' fill='%230b84ff'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-family='-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial' font-size='96' fill='white'%3E%24%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --bg: #0d1117; --panel: #111827; --muted: #6b7280; --txt: #e5e7eb;
+    --acc: #60a5fa; --good: #10b981; --bad: #f43f5e; --chip: #1f2937;
+  }
+  *{box-sizing:border-box}
+  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial;
+        color:var(--txt); background:linear-gradient(180deg,#0b1220,#0d1117 40%); min-height:100vh; }
+  header{ position:sticky; top:0; z-index:10; background:rgba(13,17,23,.7); backdrop-filter:blur(8px); border-bottom:1px solid #1f2937; }
+  .wrap{ padding:16px; max-width:840px; margin:0 auto;}
+  h1{font-size:20px; margin:0;}
+  .tabs{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .tab{ padding:10px 12px; border-radius:10px; background:var(--chip); color:#d1d5db; border:1px solid #263141; cursor:pointer; }
+  .tab.active{ background:#172135; color:#fff; border-color:#2b3a52}
+  .panel{ background:rgba(17,24,39,.7); border:1px solid #263141; border-radius:14px; padding:16px; margin:16px auto; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap }
+  .col{ flex:1 1 240px }
+  label{ display:block; font-size:12px; color:var(--muted); margin-bottom:6px }
+  input, select, textarea{
+    width:100%; padding:12px; border-radius:10px; border:1px solid #374151; background:#0f172a; color:#e5e7eb; outline:none;
+  }
+  input:focus, select:focus, textarea:focus{ border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+  button{ padding:12px 14px; border-radius:10px; border:1px solid #2b3a52; background:#1b2942; color:#e5e7eb; cursor:pointer; }
+  button.primary{ background:#2563eb; border-color:#1d4ed8 }
+  button.warn{ background:#3b1b24; border-color:#7f1d1d }
+  .grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px }
+  .metric{ padding:12px; border-radius:12px; background:#0f172a; border:1px solid #263141 }
+  .metric h3{ margin:0; font-size:13px; color:#cbd5e1 }
+  .metric .val{ font-size:22px; margin-top:4px; font-weight:700 }
+  .muted{ color:var(--muted) }
+  .good{ color:var(--good) }
+  .bad{ color:var(--bad) }
+  table{ width:100%; border-collapse: collapse; }
+  th, td{ padding:10px; border-bottom:1px solid #1f2937; text-align:left; font-size:14px }
+  th{ color:#93a3b8; font-weight:600 }
+  .pill{ font-size:12px; padding:4px 8px; border-radius:999px; background:#0f172a; border:1px solid #263141; color:#cbd5e1; }
+  .right{ text-align:right }
+  .footer-note{ font-size:12px; color:#94a3b8; }
+  .inline{ display:flex; gap:8px; align-items:center }
+  .spacer{ flex:1 }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="inline">
+      <h1>True Balance</h1>
+      <div class="spacer"></div>
+      <button id="btnExport">Export</button>
+      <label class="pill" style="margin-left:8px">
+        <input type="file" id="fileImport" style="display:none">
+        <span id="btnImport" style="cursor:pointer">Import</span>
+      </label>
+    </div>
+    <div class="tabs" id="tabs">
+      <div class="tab active" data-tab="dashboard">Dashboard</div>
+      <div class="tab" data-tab="transactions">Transactions</div>
+      <div class="tab" data-tab="paychecks">Paychecks</div>
+      <div class="tab" data-tab="settings">Settings</div>
+      <div class="tab" data-tab="help">Help</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="panel" id="dashboard" aria-label="dashboard">
+    <div class="row">
+      <div class="col">
+        <label>Current Paycheck</label>
+        <select id="pkSelect"></select>
+      </div>
+      <div class="col inline" style="align-items:flex-end">
+        <div class="spacer"></div>
+        <button id="btnQuickTxn">+ Quick Add Txn</button>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:10px">
+      <div class="metric"><h3>True Available</h3><div class="val" id="mTrue">$0.00</div></div>
+      <div class="metric"><h3>Bank-Shown Balance</h3><div class="val" id="mBank">$0.00</div></div>
+      <div class="metric"><h3>Processing Cushion</h3><div class="val" id="mCushion">$0.00</div></div>
+      <div class="metric" id="reserveBox" style="display:none"><h3>Reserved for Unpaid Card Charges</h3><div class="val bad" id="mReserve">-$0.00</div></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="row">
+        <div class="col"><label>Starting Checking</label><div id="mStart" class="val">$0.00</div></div>
+        <div class="col"><label>Paycheck Net</label><div id="mNet" class="val">$0.00</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="transactions" aria-label="transactions" style="display:none">
+    <div class="row">
+      <div class="col"><label>Paycheck</label><select id="txPkSelect"></select></div>
+      <div class="col inline" style="align-items:flex-end"><div class="spacer"></div><button id="btnAddTxn" class="primary">+ Add Transaction</button></div>
+    </div>
+    <div class="panel" style="margin-top:12px; overflow:auto">
+      <table id="txTable">
+        <thead><tr><th>Date</th><th>Type</th><th>Note</th><th class="right">Amount</th><th>Status</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="paychecks" aria-label="paychecks" style="display:none">
+    <div class="inline" style="margin-bottom:12px"><div class="spacer"></div><button id="btnAddPk" class="primary">+ Add Paycheck</button></div>
+    <div id="pkList"></div>
+  </section>
+
+  <section class="panel" id="settings" aria-label="settings" style="display:none">
+    <div class="row">
+      <div class="col">
+        <label>Auto-reserve for card charges</label>
+        <select id="sAutoReserve"><option value="true">On</option><option value="false">Off</option></select>
+      </div>
+      <div class="col">
+        <label>Default status for new transactions</label>
+        <select id="sDefaultStatus"><option value="Processing">Processing</option><option value="Pending">Pending</option><option value="Cleared">Cleared</option></select>
+      </div>
+    </div>
+    <p class="footer-note" style="margin-top:10px">
+      If ON, the app immediately earmarks money in checking for all new card charges that haven’t been paid off yet. This prevents you from overestimating what’s truly available.
+    </p>
+    <div style="margin-top:16px"><button id="btnReset" class="warn">Reset All Data</button></div>
+  </section>
+
+  <section class="panel" id="help" aria-label="help" style="display:none">
+    <h2 style="margin-top:0">How to use</h2>
+    <ol>
+      <li><b>On payday</b>: add a Paycheck with the date, net amount, and your <i>starting checking balance</i> (what your bank shows after the paycheck clears).</li>
+      <li><b>Log spending</b>: <b>Card Charge</b> for CC purchases, <b>Card Payment</b> when you initiate payoff, <b>Other Debit</b> for checking outflows, <b>Deposit</b> for extra income.</li>
+      <li>Statuses: <b>Pending/Processing</b> don’t show in your bank yet; <b>Cleared</b> does.</li>
+      <li><b>True Available</b> = Bank-Shown + (pending/processing inflows/outflows) − (unpaid card charge reserve, if enabled).</li>
+      <li>Use <b>Export</b> to backup JSON. Use <b>Import</b> to restore.</li>
+      <li>In Safari, tap <b>Share → Add to Home Screen</b> for an app-like experience.</li>
+    </ol>
+  </section>
+</main>
+
+<div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:50; align-items:center; justify-content:center; padding:16px">
+  <div id="modalCard" class="panel" style="max-width:560px; width:100%; max-height:85vh; overflow:auto"></div>
+</div>
+
+<script>
+const LS_KEY = "true-balance-v1";
+const TxnType = { cardCharge:"Card Charge", cardPayment:"Card Payment", deposit:"Deposit", otherDebit:"Other Debit" };
+const TxnStatus = { pending:"Pending", processing:"Processing", cleared:"Cleared" };
+
+let db = JSON.parse(localStorage.getItem(LS_KEY) || "null");
+if(!db){
+  db = { paychecks: [], txns: [], settings: { autoReserveCardCharges: true, defaultStatus: "Processing" } };
+  const pkId = crypto.randomUUID();
+  db.paychecks.push({ id: pkId, date: new Date().toISOString().slice(0,10), label: "Current Paycheck", netAmount: 1700, startingChecking: 2400, isClosed:false });
+  save();
+}
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(db)); }
+function currency(n){ const v=Number(n||0); return v.toLocaleString(undefined,{style:"currency",currency:"USD"}); }
+function parseNum(val){ return Math.max(0, Number((val||"").toString().replace(/[^0-9.\-]/g,"")) || 0); }
+
+function computeRollup(pkId){
+  const pk = db.paychecks.find(p=>p.id===pkId);
+  if(!pk){ return {bankShown:0,trueAvailable:0,processingCushion:0,reservedForUnpaidCardCharges:0,start:0,net:0};}
+  const txns = db.txns.filter(t=>t.paycheckId===pkId);
+  const sum = (types, statuses)=> txns
+    .filter(t=> types.includes(t.type) && statuses.includes(t.status))
+    .reduce((acc,t)=> acc + (t.type==="Deposit" ? t.amount : (t.type==="Card Charge"||t.type==="Other Debit"||t.type==="Card Payment" ? -t.amount : 0)), 0);
+  const cleared = sum(Object.values(TxnType), [TxnStatus.cleared]);
+  const pendProc = sum(Object.values(TxnType), [TxnStatus.pending, TxnStatus.processing]);
+  const bankShown = pk.startingChecking + cleared;
+  const cardChargesTotal = txns.filter(t=>t.type===TxnType.cardCharge).reduce((a,t)=>a+t.amount,0);
+  const cardPaymentsTotal = txns.filter(t=>t.type===TxnType.cardPayment).reduce((a,t)=>a+t.amount,0);
+  const unpaidCardCharges = Math.max(0, cardChargesTotal - cardPaymentsTotal);
+  const reserve = db.settings.autoReserveCardCharges ? unpaidCardCharges : 0;
+  const trueAvailable = bankShown + pendProc - reserve;
+  return { bankShown, trueAvailable, processingCushion: trueAvailable - bankShown, reservedForUnpaidCardCharges: reserve, start: pk.startingChecking, net: pk.netAmount };
+}
+
+function $(sel){ return document.querySelector(sel); }
+function el(tag, attrs={}, children=[]){
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{ if(k==="class") e.className=v; else if(k==="style") e.setAttribute("style",v); else e[k]=v; });
+  (Array.isArray(children)?children:[children]).forEach(c=>{ if(c==null) return; if(typeof c==="string") e.appendChild(document.createTextNode(c)); else e.appendChild(c); });
+  return e;
+}
+
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    const tab = t.dataset.tab;
+    document.querySelectorAll("main section.panel").forEach(s=> s.style.display = (s.id===tab?"block":"none"));
+  });
+});
+
+function refreshPaycheckSelects(){
+  const opts = db.paychecks.sort((a,b)=> new Date(b.date)-new Date(a.date))
+    .map(p=> el("option",{value:p.id, text:`${p.label} — ${p.date}`}) );
+  const pkSel=$("#pkSelect"), txPkSel=$("#txPkSelect");
+  [pkSel, txPkSel].forEach(sel=>{
+    const cur = sel.value; sel.innerHTML=""; opts.forEach(o=> sel.appendChild(o.cloneNode(true)));
+    if(cur && [...sel.options].some(o=>o.value===cur)) sel.value=cur;
+    else if(sel.options.length) sel.selectedIndex=0;
+  });
+}
+function refreshDashboard(){
+  const pkId = $("#pkSelect").value;
+  if(!pkId){ ["#mTrue","#mBank","#mCushion","#mStart","#mNet"].forEach(id=> $(id).textContent="$0.00"); return; }
+  const r = computeRollup(pkId);
+  $("#mTrue").textContent = currency(r.trueAvailable);
+  $("#mBank").textContent = currency(r.bankShown);
+  $("#mCushion").textContent = currency(r.processingCushion);
+  $("#mStart").textContent = currency(r.start);
+  $("#mNet").textContent = currency(r.net);
+  if(db.settings.autoReserveCardCharges && r.reservedForUnpaidCardCharges>0){
+    $("#reserveBox").style.display="block"; $("#mReserve").textContent = "-"+currency(r.reservedForUnpaidCardCharges);
+  } else { $("#reserveBox").style.display="none"; }
+}
+function refreshTransactions(){
+  const pkId = $("#txPkSelect").value, tbody=$("#txTable tbody"); tbody.innerHTML="";
+  db.txns.filter(t=>t.paycheckId===pkId).sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(t=>{
+    const tr = el("tr",{},[
+      el("td",{}, new Date(t.date).toLocaleDateString() ),
+      el("td",{}, t.type ),
+      el("td",{}, t.note || "" ),
+      el("td",{class:"right"}, (t.type==="Deposit"?"":"+ -")+currency(t.amount).replace("-","") ),
+      el("td",{},(()=>{
+        const s=el("select"); [TxnStatus.pending,TxnStatus.processing,TxnStatus.cleared].forEach(st=> s.appendChild(el("option",{value:st,text:st})));
+        s.value=t.status; s.addEventListener("change",()=>{ t.status=s.value; save(); refreshDashboard(); }); return s;
+      })()),
+      el("td",{},(()=>{
+        const del=el("button",{text:"Delete"}); del.addEventListener("click",()=>{ if(confirm("Delete this transaction?")){ db.txns=db.txns.filter(x=>x.id!==t.id); save(); refreshTransactions(); refreshDashboard(); }});
+        return del;
+      })())
+    ]);
+    if(t.type==="Deposit") tr.querySelector("td.right").classList.add("good");
+    tbody.appendChild(tr);
+  });
+}
+function refreshPaychecksList(){
+  const container=$("#pkList"); container.innerHTML="";
+  db.paychecks.sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(p=>{
+    const roll=computeRollup(p.id);
+    const card=el("div",{class:"panel"},[
+      el("div",{class:"inline"},[
+        el("div",{},[ el("div",{style:"font-weight:700"},p.label), el("div",{class:"muted",style:"font-size:12px"}, new Date(p.date).toLocaleDateString()) ]),
+        el("div",{class:"spacer"}), el("span",{class:"pill"}, p.isClosed?"Closed":"Open")
+      ]),
+      el("div",{class:"grid",style:"margin-top:8px"},[
+        metric("True Available", currency(roll.trueAvailable)),
+        metric("Bank-Shown", currency(roll.bankShown)),
+        metric("Processing Cushion", currency(roll.processingCushion))
+      ])
+    ]);
+    const btn=el("button",{text:"Select"}); btn.addEventListener("click",()=>{ $("#pkSelect").value=p.id; $("#txPkSelect").value=p.id; refreshDashboard(); refreshTransactions();
+      document.querySelectorAll(".tab").forEach(x=> x.classList.toggle("active", x.dataset.tab==="dashboard"));
+      document.querySelectorAll("main section.panel").forEach(s=> s.style.display=(s.id==="dashboard"?"block":"none"));
+    });
+    const toggle=el("button",{text:(p.isClosed?"Reopen":"Close")}); toggle.addEventListener("click",()=>{ p.isClosed=!p.isClosed; save(); refreshPaychecksList(); });
+    const trash=el("button",{text:"Delete"}); trash.addEventListener("click",()=>{ if(confirm("Delete this paycheck and its transactions?")){ db.txns=db.txns.filter(t=>t.paycheckId!==p.id); db.paychecks=db.paychecks.filter(x=>x.id!==p.id); save(); refreshPaycheckSelects(); refreshDashboard(); refreshTransactions(); refreshPaychecksList(); }});
+    const footer=el("div",{class:"inline",style:"gap:8px; margin-top:8px"},[btn,toggle,trash]);
+    card.appendChild(footer); container.appendChild(card);
+  });
+}
+function metric(title,val){ return el("div",{class:"metric"},[ el("h3",{},title), el("div",{class:"val"}, val) ]); }
+
+const modal=$("#modal"), modalCard=$("#modalCard");
+function openModal(node){ modalCard.innerHTML=""; modalCard.appendChild(node); modal.style.display="flex"; }
+modal.addEventListener("click",(e)=>{ if(e.target===modal) modal.style.display="none"; });
+
+function addPaycheckForm(){
+  const form=el("div",{},[
+    el("h2",{}, "Add Paycheck"),
+    el("div",{class:"row"},[ field("Label", el("input",{id:"fLabel",value:"Paycheck"})), field("Date", el("input",{id:"fDate",type:"date",value:new Date().toISOString().slice(0,10)})) ]),
+    el("div",{class:"row"},[ field("Net Amount", el("input",{id:"fNet",placeholder:"1700",inputMode:"decimal"})), field("Starting Checking Balance", el("input",{id:"fStart",placeholder:"2000",inputMode:"decimal"})) ]),
+    el("div",{class:"inline",style:"margin-top:12px"},[ el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"}) ])
+  ]);
+  const [btnCancel,btnSave]=form.querySelectorAll("button");
+  btnCancel.addEventListener("click",()=> modal.style.display="none");
+  btnSave.addEventListener("click",()=>{
+    const p={ id:crypto.randomUUID(), label:$("#fLabel").value||"Paycheck", date:$("#fDate").value||new Date().toISOString().slice(0,10),
+              netAmount:parseNum($("#fNet").value), startingChecking:parseNum($("#fStart").value), isClosed:false };
+    db.paychecks.push(p); save(); refreshPaycheckSelects(); refreshDashboard(); refreshPaychecksList(); modal.style.display="none";
+  });
+  openModal(form);
+}
+function addTxnForm(defaultPkId){
+  const form=el("div",{},[
+    el("h2",{}, "Add Transaction"),
+    el("div",{class:"row"},[ field("Type", selectFrom("fType", Object.values(TxnType))), field("Status", selectFrom("fStatus", Object.values(TxnStatus), db.settings.defaultStatus)) ]),
+    el("div",{class:"row"},[ field("Amount", el("input",{id:"fAmt",inputMode:"decimal",placeholder:"0.00"})), field("Date", el("input",{id:"fDate",type:"date",value:new Date().toISOString().slice(0,10)})) ]),
+    field("Note (merchant, reason…)", el("input",{id:"fNote"})),
+    field("Paycheck",(()=>{
+      const sel=el("select",{id:"fPk"}); db.paychecks.sort((a,b)=> new Date(b.date)-new Date(a.date)).forEach(p=> sel.appendChild(el("option",{value:p.id,text:`${p.label} — ${p.date}`})));
+      sel.value = defaultPkId || db.paychecks[0]?.id; return sel; })()),
+    el("div",{class:"inline",style:"margin-top:12px"},[ el("div",{class:"spacer"}), el("button",{text:"Cancel"}), el("button",{text:"Save",className:"primary",style:"margin-left:8px"}) ])
+  ]);
+  const [btnCancel,btnSave]=form.querySelectorAll("button");
+  btnCancel.addEventListener("click",()=> modal.style.display="none");
+  btnSave.addEventListener("click",()=>{
+    const t={ id:crypto.randomUUID(), paycheckId:$("#fPk").value, type:$("#fType").value, status:$("#fStatus").value,
+              amount:parseNum($("#fAmt").value), date:$("#fDate").value, note:$("#fNote").value||"" };
+    if(!t.paycheckId || !t.amount){ alert("Please select a paycheck and enter an amount."); return; }
+    db.txns.push(t); save(); refreshTransactions(); refreshDashboard(); modal.style.display="none";
+  });
+  openModal(form);
+}
+function field(labelText, control){ return el("div",{class:"col"},[ el("label",{},labelText), control ]); }
+function selectFrom(id, arr, val){ const s=el("select",{id}); arr.forEach(x=> s.appendChild(el("option",{value:x,text:x}))); if(val) s.value=val; return s; }
+
+$("#btnAddPk").addEventListener("click", addPaycheckForm);
+$("#btnAddTxn").addEventListener("click",()=> addTxnForm($("#txPkSelect").value));
+$("#btnQuickTxn").addEventListener("click",()=> addTxnForm($("#pkSelect").value));
+$("#sAutoReserve").addEventListener("change",(e)=>{ db.settings.autoReserveCardCharges=(e.target.value==="true"); save(); refreshDashboard(); });
+$("#sDefaultStatus").addEventListener("change",(e)=>{ db.settings.defaultStatus=e.target.value; save(); });
+$("#btnReset").addEventListener("click",()=>{ if(confirm("Really erase all data?")){ localStorage.removeItem(LS_KEY); location.reload(); }});
+$("#btnExport").addEventListener("click",()=>{ const blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="true-balance-backup.json"; a.click(); URL.revokeObjectURL(url); });
+$("#btnImport").addEventListener("click",()=> $("#fileImport").click());
+$("#fileImport").addEventListener("change", async (e)=>{ const file=e.target.files?.[0]; if(!file) return;
+  try{ const text=await file.text(); const data=JSON.parse(text); if(!data.paychecks||!data.txns||!data.settings) throw new Error("Invalid backup file.");
+    db=data; save(); refreshPaycheckSelects(); refreshDashboard(); refreshTransactions(); refreshPaychecksList(); alert("Import complete."); }catch(err){ alert("Import failed: "+err.message); } });
+
+function initialRender(){
+  refreshPaycheckSelects();
+  $("#sAutoReserve").value = db.settings.autoReserveCardCharges ? "true":"false";
+  $("#sDefaultStatus").value = db.settings.defaultStatus;
+  $("#txPkSelect").value = $("#pkSelect").value;
+  refreshDashboard(); refreshTransactions(); refreshPaychecksList();
+}
+initialRender();
+</script>
+</body>
+</html>
